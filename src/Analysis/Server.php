@@ -7,7 +7,6 @@
 
 namespace VSR\Extend\Analysis;
 
-use VSR\Extend\Analysis;
 use VSR\Extend\Analysis\Contract\AbstractChart;
 
 class Server extends AbstractChart
@@ -51,7 +50,7 @@ class Server extends AbstractChart
         $disk_free = number_format(disk_free_space('/') / 1024 / 1024 / 1024, 3, '.', '');
         $disk_used = number_format($disk_total - $disk_free, 3, '.', '');
 
-        $this->chart(
+        return $this->chart(
             ['c', 's10', 'i', 'i10', 'h', 'd'],
             ['id' => 'uptime', 'value' => $uptime],
             ['id' => 'cpu', 'value' => $cpu],
@@ -72,7 +71,5 @@ class Server extends AbstractChart
             ['id' => 'disk-free', 'value' => $disk_free],
             ['id' => 'disk-used', 'value' => $disk_used]
         );
-
-        return true;
     }
 }

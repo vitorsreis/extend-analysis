@@ -35,6 +35,16 @@ class PDOSQLite implements DriverInterface
         $this->instance = new PDO("sqlite:$database");
     }
 
+    public function __destruct()
+    {
+        $this->instance = null;
+        unset(
+            $this->instance,
+            $this->lastId,
+            $this->affected
+        );
+    }
+
     private function query($command, $values = [])
     {
         $this->lastId = false;
@@ -83,23 +93,29 @@ class PDOSQLite implements DriverInterface
     {
         foreach ($collections as $collection => $fields) {
             $primary = [];
+            $index = [];
 
             $sql = "CREATE TABLE IF NOT EXISTS `$collection` (" . PHP_EOL;
-            $sql .= implode(',' . PHP_EOL, array_map(static function ($field, $config) use (&$primary) {
+            $sql .= implode(',' . PHP_EOL, array_map(static function ($field, $config) use (&$primary, &$index) {
                 $sql = "`$field` $config[type]";
                 isset($config['length']) && $sql .= "({$config['length']})";
                 !empty($config['primary']) && ($sql .= " PRIMARY KEY") && $primary[] = "`$field`";
                 !empty($config['ai']) && $sql .= " AUTOINCREMENT";
                 empty($config['null']) && empty($config['primary']) && $sql .= " NOT NULL";
                 !empty($config['null']) && $sql .= " DEFAULT NULL";
+                !empty($config['index']) && $index[] = $field;
                 return $sql;
             }, array_keys($fields), $fields));
             if (count($primary) > 1) {
                 $sql = str_replace(' PRIMARY KEY', '', $sql);
                 !empty($primary) && $sql .= PHP_EOL . ", PRIMARY KEY (" . implode(',', $primary) . ")";
             }
-            $sql .= PHP_EOL . ");";
+            $sql .= PHP_EOL . ")";
             $this->query($sql);
+
+            foreach ($index as $field) {
+                $this->query("CREATE INDEX IF NOT EXISTS `idx_$collection-$field` ON `$collection` (`$field`)");
+            }
         }
     }
 
@@ -130,7 +146,7 @@ class PDOSQLite implements DriverInterface
             return false;
         }
 
-        $this->query($command = "
+        $this->query("
             UPDATE `$collection` SET
                 `value` = ((`value` * `count`) + :value) / (`count` + 1),
                 `count` = `count` + 1
