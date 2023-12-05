@@ -40,7 +40,7 @@ class Analysis
             'chart' => [
                 'id' => ['type' => 'varchar', 'primary' => true, 'length' => 100],
                 'count' => ['type' => 'bigint', 'null' => true],
-                'value' => ['type' => 'float']
+                'value' => ['type' => 'float', 'null' => true],
             ],
             'request' => [
                 'id' => ['type' => 'integer', 'primary' => true, 'ai' => true],

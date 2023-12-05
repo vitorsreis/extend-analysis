@@ -9,9 +9,9 @@ namespace VSR\Extend\Analysis;
 
 use Exception;
 use VSR\Extend\Analysis;
-use VSR\Extend\Analysis\Contract\AbstractChart;
+use VSR\Extend\Analysis\Contract\AbstractHitGroup;
 
-class Request extends AbstractChart
+class Request extends AbstractHitGroup
 {
     protected $parent_id = [];
 
@@ -194,7 +194,7 @@ class Request extends AbstractChart
             unset($request);
 
             # Hit and duration chart
-            $this->chart(['d'], ['id' => 'request-hits', 'value' => 0], ['id' => 'request-duration', 'value' => 0]);
+            $this->hitGroup(['d'], ['id' => 'request-hits', 'value' => 0], ['id' => 'request-duration', 'value' => 0]);
 
             if (!$profile) {
                 return true;

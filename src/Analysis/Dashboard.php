@@ -9,4 +9,7 @@ namespace VSR\Extend\Analysis;
 
 class Dashboard
 {
+    public static function dashboard()
+    {
+    }
 }

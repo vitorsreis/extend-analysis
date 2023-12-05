@@ -9,21 +9,22 @@ namespace VSR\Extend\Analysis\Contract;
 
 use VSR\Extend\Analysis;
 
-abstract class AbstractChart
+abstract class AbstractHitGroup
 {
     /**
      * @param string[] $group c=current, s=second, s10=10 second, i=minute, i10=minute, h=hour, d=day, m=month, y=year
      * @param array{id:string, value:mixed} ...$data
      * @return bool
      */
-    public static function chart($group = ['s10', 'i', 'i10', 'h', 'd'], ...$data)
+    public static function hitGroup($group = ['s10', 'i', 'i10', 'h', 'd'], ...$data)
     {
+        $current = [];
         $hits = [];
 
         $now = date('YmdHis');
         foreach ($data as $i) {
-            in_array('c', $group) && $hits[] = [
-                'id' => "avg_c-$i[id]", # Current, no group
+            in_array('c', $group) && $current[] = [
+                'id' => "cur-$i[id]", # Current, no group and no avg
                 'value' => $i['value']
             ];
             in_array('s', $group) && $hits[] = [
@@ -60,6 +61,8 @@ abstract class AbstractChart
             ];
         }
 
-        return $hits && Analysis::getDriver()->avg('chart', ...$hits);
+        return ($current || $hits)
+            && (!$current || Analysis::getDriver()->put('chart', ...$current))
+            && (!$hits || Analysis::getDriver()->avg('chart', ...$hits));
     }
 }
