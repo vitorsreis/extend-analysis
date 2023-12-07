@@ -13,8 +13,8 @@ echo "Start add 1000 requests:" . PHP_EOL;
 
 $avgCount = 0;
 $avgTime = 0;
-for ($i = 0; $i < 1000; $i++) {
-    $request = new Analysis\Request(false);
+for ($i = 0; $i < 100000; $i++) {
+    $request = new Analysis\Request("test-" . ($i % 10), false);
 
     # Example of use
     $request->start('aaa');
@@ -45,6 +45,10 @@ for ($i = 0; $i < 1000; $i++) {
     $request->stop(); // ccc-lvl-3
     $request->stop(); // ccc-lvl-2
     $request->stop(); // ccc-lvl-1
+
+    for ($j = 1; $j <= 500; $j++) {
+        $request->start("ddd-lvl-$j");
+    }
 
     $start = microtime(true);
     $request->save();

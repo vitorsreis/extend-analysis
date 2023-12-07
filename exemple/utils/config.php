@@ -20,6 +20,7 @@ use VSR\Extend\Analysis;
 
 # Set driver
 # $drive = new Analysis\Driver\PDOMySQL('localhost', 'root', '', 'analysis', 3306);
-$drive = new Analysis\Driver\PDOSQLite(DIR_STORAGE . '/test.sqlite');
+$drive = new Analysis\Model\PDOSQLite(DIR_STORAGE . '/test.sqlite');
+$drive->install();
 
-Analysis::setDriver($drive);
+Analysis::setModel($drive);

@@ -28,11 +28,11 @@ use VSR\Extend\Analysis;
 global $requestProfile;
 
 # Create driver
-$driver = new Analysis\Driver\PDOSQLite(__DIR__ . '/monitor.sqlite');
+$driver = new Analysis\Model\PDOSQLite(__DIR__ . '/monitor.sqlite');
 # $driver = new Analysis\Driver\PDOMySQL('localhost', 'root', '', 'analysis', 3306);
 
 # Set driver
-Analysis::setDriver($driver);
+Analysis::setModel($driver);
 
 # @param bool $autoSave [optional] Save automatically on shutdown event
 #                       default: true, if false, you need call $requestProfile->save() manually

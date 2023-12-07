@@ -7,9 +7,9 @@
 
 namespace VSR\Extend\Analysis;
 
-use VSR\Extend\Analysis\Contract\AbstractHitGroup;
+use VSR\Extend\Analysis;
 
-class Server extends AbstractHitGroup
+class Server
 {
     /**
      * @param array{
@@ -32,6 +32,11 @@ class Server extends AbstractHitGroup
      *      disk_free:float,
      *      disk_used:float
      *  }|false $normalized
+     * uptime: in minutes
+     * cpu: in percent
+     * mem: in GB
+     * swa: in GB
+     * disk: in GB
      * @return bool
      */
     public static function save($normalized)
@@ -40,7 +45,9 @@ class Server extends AbstractHitGroup
             return false;
         }
 
+        $valid = false;
         $data = [];
+
         $keys = [
             'uptime',
             'cpu',
@@ -62,13 +69,15 @@ class Server extends AbstractHitGroup
             'disk_used'
         ];
         foreach ($keys as $key) {
-            if (!isset($normalized[$key])) {
-                return false; # validation
-            }
-            $data[] = ['id' => $key, 'value' => $normalized[$key]];
+            $data[$key] = !empty($normalized[$key]) ? $normalized[$key] : null;
+            $valid = $valid || null !== $data[$key];
         }
         unset($keys, $normalized);
 
-        return static::hitGroup(['c', 's10', 'i', 'i10', 'h', 'd'], ...$data);
+        if (!$valid) {
+            return false;
+        }
+
+        return Analysis::getModel()->processServer($data);
     }
 }

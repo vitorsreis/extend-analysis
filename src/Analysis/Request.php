@@ -9,10 +9,12 @@ namespace VSR\Extend\Analysis;
 
 use Exception;
 use VSR\Extend\Analysis;
-use VSR\Extend\Analysis\Contract\AbstractHitGroup;
+use VSR\Extend\Analysis\Contract\AbstractModel;
 
-class Request extends AbstractHitGroup
+class Request
 {
+    protected $routeKey;
+
     protected $parent_id = [];
 
     protected $profile = [];
@@ -29,10 +31,12 @@ class Request extends AbstractHitGroup
     protected $beforeSave;
 
     /**
-     * @param bool $autoSave Save automatically on shutdown event
+     * @param string $routeKey Route key
+     * @param array $options Options
      */
-    public function __construct($options = [ 'autoSave' => true, 'autoError' => true])
+    public function __construct($routeKey, $options = [ 'autoSave' => true, 'autoError' => true])
     {
+        $this->routeKey = $routeKey;
         $this->start('profile');
         !empty($options['autoError']) && set_error_handler([$this, 'error'], E_ALL);
         !empty($options['autoError']) && set_exception_handler([$this, 'error']);
@@ -149,6 +153,7 @@ class Request extends AbstractHitGroup
         }
 
         $request = [
+            'route_key' => $this->routeKey,
             'start' => $this->profile[0]['start'],
             'end' => $this->profile[0]['end'],
             'duration' => $this->profile[0]['end'] - $this->profile[0]['start'],
@@ -186,30 +191,8 @@ class Request extends AbstractHitGroup
                 return false;
             }
 
-            $profile = isset($request['profile']) ? $request['profile'] : [];
-            unset($request['profile']);
-
             # Save request
-            Analysis::getDriver()->put('request', $request);
-            unset($request);
-
-            # Hit and duration chart
-            $this->hitGroup(['d'], ['id' => 'request-hits', 'value' => 0], ['id' => 'request-duration', 'value' => 0]);
-
-            if (!$profile) {
-                return true;
-            }
-
-            $request_id = Analysis::getDriver()->getLastId();
-            foreach ($profile as $id => $item) {
-                $profile[$id]['id'] = $id;
-                $profile[$id]['request_id'] = $request_id;
-                $profile[$id]['extra'] = $profile[$id]['extra'] ?: null;
-                $profile[$id]['error'] = $profile[$id]['error'] ?: null;
-            }
-
-            Analysis::getDriver()->put('profile', ...$profile);
-            return $request_id;
+            return Analysis::getModel()->processRequest($request);
         } finally {
             unset($beforeSave, $request, $profile);
         }
