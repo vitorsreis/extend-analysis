@@ -9,7 +9,6 @@ namespace VSR\Extend\Analysis;
 
 use Exception;
 use VSR\Extend\Analysis;
-use VSR\Extend\Analysis\Contract\AbstractModel;
 
 class Request
 {

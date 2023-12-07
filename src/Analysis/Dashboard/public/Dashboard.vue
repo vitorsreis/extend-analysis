@@ -32,11 +32,11 @@
       </div>
     </div>
     <div class="row">
-      <div class="col-md-4" style="min-height:300px;height:calc(100vh - 255px)">
-        <Datatables.netVue id="list-routeKey" class="table table-sm" :columns="routes.dt.columns" :data="routes.dt.data" :options="routes.dt.options" />
+      <div class="col-md-4 my-2">
+        <Datatables.netVue ref="dt-routeKey" class="table table-sm" :columns="routes.dt.columns" :data="routes.dt.data" :options="routes.dt.options" />
       </div>
-      <div class="col-md-8" style="min-height:300px;height:calc(100vh - 255px)">
-        <Datatables.netVue id="list-requests" class="table table-sm" :columns="requests.dt.columns" :data="requests.dt.data" :options="requests.dt.options" />
+      <div class="col-md-8 my-2">
+        <Datatables.netVue ref="dt-requests" class="table table-sm" :columns="requests.dt.columns" :data="requests.dt.data" :options="requests.dt.options" />
       </div>
     </div>
   </div>
@@ -68,7 +68,20 @@ export default {
     },
     secondFormat(value) {
       return this.numberFormat(value, 3) + 's';
+    },
+    resize() {
+      let height = window.innerHeight - 325;
+      let pageLength = Math.floor(height / 25);
+      if (pageLength < 10) pageLength = 10;
+      this.dtPageSize = pageLength;
+
+      this.$refs['dt-routeKey'].dt.page.len(pageLength).draw(false);
+      this.$refs['dt-requests'].dt.page.len(pageLength).draw(false);
     }
+  },
+  mounted() {
+    window.addEventListener('resize', this.resize);
+    this.resize();
   },
   computed: {
     server() {
@@ -82,20 +95,21 @@ export default {
       if (uptime_hours > 0) uptime += ` ${uptime_hours}h`;
       if (uptime_minutes > 0) uptime += ` ${uptime_minutes}m`;
 
+      let cpu_percent = analysis.data.dashboard.server.current.cpu;
       let disk_percent = analysis.data.dashboard.server.current.disk_used * 100 / analysis.data.dashboard.server.current.disk_total;
       let memory_percent = analysis.data.dashboard.server.current.mem_used * 100 / analysis.data.dashboard.server.current.mem_total;
 
       return {
         uptime,
         cpu: {
-          percent: this.percentFormat(analysis.data.dashboard.server.current.cpu),
-          class: analysis.data.dashboard.server.current.cpu < 60 ? 'text-success' : (analysis.data.dashboard.server.current.cpu < 80 ? 'text-warning' : 'text-danger'),
+          percent: this.percentFormat(cpu_percent),
+          class: cpu_percent < 60 ? 'text-success' : (cpu_percent < 80 ? 'text-warning' : 'text-danger'),
           chart: {
             data: {
               labels: ['Free', 'Usage'],
               datasets: [
                 {
-                  data: [100 - parseFloat(analysis.data.dashboard.server.current.cpu), analysis.data.dashboard.server.current.cpu],
+                  data: [this.numberFormat(100 - parseFloat(cpu_percent), 1), this.numberFormat(cpu_percent, 1)],
                   backgroundColor: ['rgb(127,190,132)', 'rgb(255 138 163)']
                 }
               ]
@@ -120,7 +134,7 @@ export default {
               labels: ['Free', 'Usage'],
               datasets: [
                 {
-                  data: [this.numberFormat(100 - disk_percent, 1), this.numberFormat(disk_percent)],
+                  data: [this.numberFormat(100 - disk_percent, 1), this.numberFormat(disk_percent, 1)],
                   backgroundColor: ['rgb(127,190,132)', 'rgb(255 138 163)']
                 }
               ]
@@ -146,7 +160,7 @@ export default {
               labels: ['Free', 'Usage'],
               datasets: [
                 {
-                  data: [this.numberFormat(100 - memory_percent), this.numberFormat(memory_percent)],
+                  data: [this.numberFormat(100 - memory_percent, 1), this.numberFormat(memory_percent, 1)],
                   backgroundColor: ['rgb(127,190,132)', 'rgb(255 138 163)']
                 }
               ]
@@ -240,17 +254,29 @@ export default {
             {data: "date", title: "Date"},
             {data: "end", title: "End Time"},
             {data: "memory", title: "Memory"},
-            {data: "profile_count", title: "Profile Count"},
-            {data: "http_code", title: "HTTP Code"},
+            {data: "profile_count", title: "Count"},
+            {data: "http_code", title: "Code"},
             {data: "method", title: "Method"},
             {data: "uri", title: "URI"},
             {data: "error", title: "ERR"}
           ],
-          data: [],
           options: {
+            responsive: true,
             searching: false,
             lengthChange: false,
-            order: [[2, 'desc']]
+            order: [[0, 'desc']],
+            loading: true,
+            serverSide: true,
+            scrollY: 'calc(100vh - 325px)',
+            async ajax(request, callback, api) {
+              callback({
+                draw: request.draw,
+                recordsTotal: 500,
+                recordsFiltered: 500,
+                data: [],
+                error: false
+              })
+            },
           }
         }
       }
@@ -266,18 +292,43 @@ export default {
             {data: "max", title: "Max"},
             {data: "last", title: "Last", orderable: false}
           ],
-          data: [],
           options: {
+            responsive: true,
             searching: false,
             lengthChange: false,
-            order: [[2, 'desc']]
+            order: [[2, 'desc']],
+            loading: true,
+            serverSide: true,
+            scrollY: 'calc(100vh - 325px)',
+            async ajax(request, callback, api) {
+              let data = [];
+              for (let i = 0; i < request.length; i++) {
+                data.push({ route_key: 'route_key_' + i, count: i, avg: i, min: i, max: i, last: i });
+              }
+
+              callback({
+                draw: request.draw,
+                recordsTotal: 500,
+                recordsFiltered: 500,
+                data: data,
+                error: false
+              })
+            },
           }
         }
       }
     }
-  },
+  }
 }
+
 </script>
+
+<style>
+
+.dataTables_scrollBody {
+  min-height: 255px !important;
+}
+</style>
 
 <style scoped>
 #current,
