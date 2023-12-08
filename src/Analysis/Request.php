@@ -173,8 +173,8 @@ class Request
             'headers' => headers_list() ?: null,
             'inc_files' => get_included_files() ?: null,
 
-            'memory' => memory_get_peak_usage(true),
-            'memory_peak' => memory_get_peak_usage(true),
+            'memory' => round(memory_get_peak_usage(true) / 1024 / 1024, 3),
+            'memory_peak' => round(memory_get_peak_usage(true) / 1024 / 1024, 3),
             'error' => $this->error ?: null,
             'extra' => $this->extra ?: null,
 

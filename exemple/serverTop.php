@@ -68,18 +68,18 @@ MiB Swap: $swa_total total, $swa_free free, $swa_used used. $swa_cache avail Mem
 4105821 d5whub    20   0   52152   3876   3448 R   0.0   0.1   0:00.00 top
 ";
 
-    $start_avg = microtime(true);
+    $start_save_avg = microtime(true);
     Analysis\Server\Top::execute($input);
-    $end_avg = microtime(true) - $start_avg;
+    $time_save_avg = microtime(true) - $start_save_avg;
 
-    $avgTime = (($avgTime * $avgCount) + $end_avg) / ($avgCount + 1);
+    $avgTime = (($avgTime * $avgCount) + $time_save_avg) / ($avgCount + 1);
     $avgCount++;
 
     unset($request, $drive);
-    echo "- " . $i . ', time: ' . (microtime(true) - $start_avg) . PHP_EOL;
+    echo "- " . $i . ', time: ' . (microtime(true) - $start_save_avg) . PHP_EOL;
 
     echo "Waiting 1 second";
-    for ($j = 0; $j < 3; $j++) {
+    for ($w = 0; $w < 3; $w++) {
         usleep(1000000 / 3);
         echo ".";
     }

@@ -11,8 +11,6 @@ import DataTablesCore from 'datatables.net-bs5';
 import * as ChartJS from 'chart.js';
 import * as VueChart from "vue-chartjs";
 
-console.log(VueSfc);
-
 DataTable.use(DataTablesCore);
 ChartJS.Chart.register(...ChartJS.registerables);
 window.ChartJS = VueChart;

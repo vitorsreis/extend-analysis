@@ -7,6 +7,8 @@
 
 namespace VSR\Extend\Analysis;
 
+use VSR\Extend\Analysis;
+
 class Viewer
 {
     public static function execute()
@@ -26,8 +28,8 @@ class Viewer
                 static::outputFile($_REQUEST['file']);
                 exit;
 
-            case 'current':
-                static::outputCurrent();
+            case 'data':
+                static::outputData();
                 exit;
 
             default:
@@ -44,7 +46,7 @@ class Viewer
 
     private static function outputFile($file)
     {
-        $dir = realpath(__DIR__ . '/Viewer/public');
+        $dir = realpath(__DIR__ . '/Viewer');
         $file = realpath("$dir/$file");
 
         if (substr($file, 0, strlen($dir)) !== $dir) {
@@ -81,8 +83,13 @@ class Viewer
         exit;
     }
 
-    private static function outputCurrent()
+    private static function outputData()
     {
+        $data = Analysis::getModel()->getViewerData($_REQUEST);
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        exit;
     }
 
     private static function view()

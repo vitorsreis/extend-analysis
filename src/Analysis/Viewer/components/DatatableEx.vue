@@ -91,7 +91,6 @@ export default {
       if (pageLength < 10) pageLength = 10;
 
       this.$refs.dt.dt.page.len(pageLength);
-      this.redraw();
     }
   }
 }

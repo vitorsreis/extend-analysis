@@ -146,9 +146,9 @@ class PDOSQLite extends AbstractModel
                 `memory` bigint DEFAULT NULL,
                 `memory_peak` bigint DEFAULT NULL,
                 `error` json DEFAULT NULL,
-                `has_error` tinyint(1) DEFAULT false,
+                `error_count` integer DEFAULT false,
                 `extra` json DEFAULT NULL,
-                `profile_count` int NOT NULL
+                `profile_count` integer NOT NULL
             )
         ");
         $this->query("CREATE INDEX IF NOT EXISTS `idx_requests-key` ON `requests` (`key`)");
@@ -226,14 +226,14 @@ class PDOSQLite extends AbstractModel
                     (:key, :type, :ref, 1, :value)
                 ON CONFLICT (`key`, `type`, `ref`) DO UPDATE SET
                     `count` = `count` + 1,
-                    `value` = ((`value` * `count`) + :value) / (`count` + 1),
+                    `value` = CASE WHEN `type` = '' AND `ref` = '' THEN :value ELSE ((`value` * `count`) + :value) / (`count` + 1) END,
                     `update_at` = CURRENT_TIMESTAMP
             ", ...$values);
         } else {
             $this->query("
                 UPDATE `hits` SET
                     `count` = `count` + 1,
-                    `value` = ((`value` * `count`) + :value) / (`count` + 1),
+                    `value` = CASE WHEN `type` = '' AND `ref` = '' THEN :value ELSE ((`value` * `count`) + :value) / (`count` + 1) END,
                     `update_at` = CURRENT_TIMESTAMP
                 WHERE
                     `key` = :key
@@ -247,7 +247,7 @@ class PDOSQLite extends AbstractModel
 
             if ($values) {
                 $this->query("
-                    INSERT INTO `hits`
+                    INSERT OR IGNORE INTO `hits`
                         (`key`, `type`, `ref`, `count`, `value`)
                     VALUES
                         (:key, :type, :ref, 1, :value)
@@ -292,7 +292,7 @@ class PDOSQLite extends AbstractModel
 
             if ($values) {
                 $this->query("
-                    INSERT INTO `$collection`
+                    INSERT OR IGNORE INTO `$collection`
                         (`key`, `hits`, `avg`, `min`, `max`, `last`)
                     VALUES
                         (:key, 1, :duration, :duration, :duration, :duration)
@@ -336,7 +336,7 @@ class PDOSQLite extends AbstractModel
             ['key' => $request['key'], 'duration' => $request['duration']]
         );
 
-        $request['has_error'] = $request['error'] ? 1 : 0;
+        $request['error_count'] = $request['error'] ? count($request['error']) : 0;
         $profile = $request['profile'];
         unset($request['profile']);
 
@@ -396,5 +396,221 @@ class PDOSQLite extends AbstractModel
         ));
 
         unset($data);
+    }
+
+    public function getViewerData($options)
+    {
+        $json = [
+            'server' => [
+                'current' => [
+                    'uptime' => 0,
+                    'cpu' => 0.0,
+                    'thr_total' => 0,
+                    'thr_running' => 0,
+                    'thr_sleeping' => 0,
+                    'thr_stopped' => 0,
+                    'thr_zombie' => 0,
+                    'mem_total' => 0.0,
+                    'mem_free' => 0.0,
+                    'mem_used' => 0.0,
+                    'mem_cache' => 0.0,
+                    'swa_total' => 0.0,
+                    'swa_free' => 0.0,
+                    'swa_used' => 0.0,
+                    'swa_cache' => 0.0,
+                    'disk_total' => 0.0,
+                    'disk_free' => 0.0,
+                    'disk_used' => 0.0,
+                ],
+                'chart' => [
+                    # '00:00' => ['cpu' => 0.0, 'mem' => 0.0, 'swa' => 0.0, 'disk' => 0.0]
+                ]
+            ],
+            'request' => [
+                'current' => [
+                    'avg' => 0.0,
+                    'total' => 0,
+                    'per' => [
+                        'second' => 0,
+                        'minute' => 0,
+                        'hour' => 0,
+                        'day' => 0,
+                    ]
+                ],
+                'chart' => [
+                    # '00:00' => 0
+                ],
+                'dt' => [
+                    'reqs' => [
+                        'recordsTotal' => 0,
+                        'recordsFiltered' => 0,
+                        'data' => [
+                            # ['id' => 0, 'key' => '', 'start' => 0.0, 'end' => 0.0, 'duration' => 0.0, 'memory' => 0.0, 'profile_count' => 0, 'http_code' => 0, 'method' => '', 'uri' => '', 'error_count' => false]
+                        ]
+                    ],
+                    'keys' => [
+                        'recordsTotal' => 0,
+                        'recordsFiltered' => 0,
+                        'data' => [
+                            # ['key' => '', 'count' => 0, 'avg' => 0.0, 'min' => 0.0, 'max' => 0.0, 'last' => 0.0]
+                        ]
+                    ],
+                ]
+            ]
+        ];
+
+        $chartGroupBy = !empty($options['chartGroupBy']) ? $options['chartGroupBy'] : null;
+        $chartLength = !empty($options['chartLength']) ? $options['chartLength'] : 100;
+
+        $dtReqsStart = !empty($options['dtReqsStart']) ? $options['dtReqsStart'] : 0;
+        $dtReqsLength = !empty($options['dtReqsLength']) ? $options['dtReqsLength'] : 10;
+        $dtReqsOrder = !empty($options['dtReqsOrder']) ? $options['dtReqsOrder'] : 'start';
+        $dtKeysStart = !empty($options['dtKeysStart']) ? $options['dtKeysStart'] : 0;
+        $dtKeysLength = !empty($options['dtKeysLength']) ? $options['dtKeysLength'] : 10;
+        $dtKeysOrder = !empty($options['dtKeysOrder']) ? $options['dtKeysOrder'] : 'avg';
+
+        # Get server.current.*, request.current.*
+        $this->query("
+            SELECT
+                *
+            FROM
+                `hits`
+            WHERE
+                `type` = '' AND `ref` = ''
+            ORDER BY
+                `ref` DESC
+        ");
+        foreach ($this->rows as $i) {
+            if ($i['key'] === 'req') {
+                $time = strtotime($i['update_at']) - strtotime($i['create_at']);
+                $json['request']['current']['avg'] = round($i['value'], 3);
+                $json['request']['current']['total'] = $i['count'];
+                $json['request']['current']['per']['second'] = ceil($i['count'] / $time);
+                $json['request']['current']['per']['minute'] = ceil($i['count'] / ($time / 60));
+                $json['request']['current']['per']['hour'] = ceil($i['count'] / ($time / 3600));
+                $json['request']['current']['per']['day'] = ceil($i['count'] / ($time / 86400));
+                continue;
+            }
+
+            if (isset($json['server']['current'][$i['key']])) {
+                $json['server']['current'][$i['key']] = round($i['value'] ?: 0, 1);
+            }
+        }
+
+        # Get server.chart.*, request.chart.*
+        if ($chartGroupBy) {
+            $this->query("
+                SELECT
+                    `ref` AS `ref`,
+                    GROUP_CONCAT(json_object('key', `key`,'count', `count`,'value', `value`)) AS `json`
+                FROM
+                    `hits`
+                WHERE
+                    `type` = 's10'
+                GROUP BY
+                    `ref`
+                ORDER BY
+                    `ref` DESC
+                LIMIT
+                    :length
+            ", [
+                'length' => $chartLength
+            ]);
+            foreach ($this->rows as $i) {
+                foreach (json_decode('[' . $i['json'] . ']', true) as $j) {
+                    !isset($json['server']['chart'][$i['ref']]) && $json['server']['chart'][$i['ref'] ] = [ 'cpu' => 0.0, 'mem_used' => 0.0, 'disk_used' => 0.0 ];
+                    !isset($json['request']['chart'][$i['ref']]) && $json['request']['chart'][$i['ref']] = 0;
+
+                    if ($j['key'] === 'req') {
+                        $json['request']['chart'][$i['ref']] = round($j['count'] ?: 0);
+                        continue;
+                    }
+
+                    $json['server']['chart'][$i['ref']][$j['key']] = round($j['value'] ?: 0, 1);
+                }
+            }
+        }
+
+        # Get request.dt.reqs.*
+        $this->query("
+            SELECT
+                `key`,
+                `start`,
+                `end`,
+                `duration`,
+                `memory`,
+                `profile_count`,
+                `http_code`,
+                `method`,
+                `url`,
+                `error_count`
+            FROM
+                `requests`
+            ORDER BY
+                `$dtReqsOrder` DESC
+            LIMIT
+                :start, :length
+        ", [
+            'start' => $dtReqsStart,
+            'length' => $dtReqsLength
+        ]);
+        if ($this->rows) {
+            foreach ($this->rows as $i) {
+                $i['duration'] = round($i['duration'], 3);
+                $i['memory'] = round($i['memory'], 3);
+                $i['profile_count'] = round($i['profile_count']);
+                $i['http_code'] = intval($i['http_code']);
+                $i['error_count'] = round($i['error_count']);
+                $json['request']['dt']['reqs']['data'][] = $i;
+            }
+
+            $this->query("
+                SELECT
+                    COUNT(*) AS `count`
+                FROM
+                    `requests`
+            ");
+            $json['request']['dt']['reqs']['recordsTotal'] = $this->rows[0]['count'];
+            $json['request']['dt']['reqs']['recordsFiltered'] = $this->rows[0]['count'];
+        }
+
+        # Get request.dt.keys.*
+        $this->query("
+            SELECT
+                `key`,
+                `hits`,
+                `avg`,
+                `min`,
+                `max`,
+                `last`
+            FROM
+                `requests_avg`
+            ORDER BY
+                `$dtKeysOrder` DESC
+            LIMIT
+                :start, :length
+        ", [
+            'start' => $dtKeysStart,
+            'length' => $dtKeysLength
+        ]);
+        if ($this->rows) {
+            foreach ($this->rows as $i) {
+                $i['avg'] = round($i['avg'], 3);
+                $i['min'] = round($i['min'], 3);
+                $i['max'] = round($i['max'], 3);
+                $i['last'] = round($i['last'], 3);
+                $json['request']['dt']['keys']['data'][] = $i;
+            }
+
+            $this->query("
+                SELECT
+                    COUNT(*) AS `count`
+                FROM
+                    `requests_avg`
+            ");
+            $json['request']['dt']['keys']['recordsTotal'] = $this->rows[0]['count'];
+            $json['request']['dt']['keys']['recordsFiltered'] = $this->rows[0]['count'];
+        }
+        return $json;
     }
 }

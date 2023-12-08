@@ -20,7 +20,6 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use VSR\Extend\Analysis;
 
 # Set driver
-# $drive = new Analysis\Driver\PDOMySQL('localhost', 'root', '', 'analysis', 3306);
 $drive = new Analysis\Model\PDOSQLite(DIR_STORAGE . '/test.sqlite');
 $drive->install();
 

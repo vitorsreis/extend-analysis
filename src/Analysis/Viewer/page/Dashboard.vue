@@ -52,7 +52,6 @@
     </div>
     <div class="row" id="dts">
       <div class="col-md-4 my-2">
-        <button @click="test" style="position: absolute;top:0">XXX</button>
         <DatatableEx ref="dt-routes" :columns="routes.dt.columns" :options="routes.dt.options" />
       </div>
       <div class="col-md-8 my-2">
@@ -74,37 +73,6 @@ export default {
     DatatableEx
   },
   methods: {
-    test() {
-      // random number 10~1000
-      let count = Math.floor(Math.random() * (1000 - 10 + 1) + 10);
-
-      this.$refs['dt-routes'].redraw([
-          {route_key: 'GET /', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api/v1', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api/v1', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api/v1', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api/v1', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api/v1', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api/v1', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api/v1', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api/v1', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api/v1', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api/v1', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api/v1', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api/v1', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api/v1', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api/v1', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api/v1', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api/v1', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api/v1', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-          {route_key: 'GET /api/v1', count: 1000, avg: 0.23, min: 0.12, max: 0.45, last: 0.23},
-        ],
-        count,
-        count,
-      );
-    },
-
     numberFormat(value, decimals = 2) {
       return value
           .toFixed(decimals)
@@ -121,6 +89,37 @@ export default {
     secondFormat(value) {
       return this.numberFormat(value, 3) + 's';
     },
+    async updateData() {
+
+      let start_time = new Date().getTime();
+      this.report = await analysis.action('data', {
+        chartGroupBy: 'i',
+        chartLength: 100,
+        dtReqsStart: this.$refs['dt-requests']?.$refs.dt.dt.page.info().start || 0,
+        dtReqsLength: this.$refs['dt-requests']?.$refs.dt.dt.page.info().length || 10,
+        dtReqsOrder: 'start',
+        dtKeysStart: this.$refs['dt-routes']?.$refs.dt.dt.page.info().start || 0,
+        dtKeysLength: this.$refs['dt-routes']?.$refs.dt.dt.page.info().length || 10,
+        dtKeysOrder: 'avg'
+      });
+      console.log();
+
+      this.$refs['dt-routes'].redraw(
+          this.report.request.dt.keys.data,
+          this.report.request.dt.keys.recordsTotal,
+          this.report.request.dt.keys.recordsFiltered
+      );
+      this.$refs['dt-requests'].redraw(
+          this.report.request.dt.reqs.data,
+          this.report.request.dt.reqs.recordsTotal,
+          this.report.request.dt.reqs.recordsFiltered
+      );
+
+      let end_time = new Date().getTime();
+      console.log('updateData', (end_time - start_time) / 1000);
+
+      setTimeout(() => this.updateData(), 500);
+    }
   },
   data() {
     return {
@@ -128,93 +127,50 @@ export default {
       report: {
         server: {
           current: {
-            uptime: 180,
-            cpu: 50,
-
-            thr_total: 100,
-            thr_running: 50,
-            thr_sleeping: 30,
-            thr_stopped: 15,
-            thr_zombie: 5,
-            mem_total: 8192,
-            mem_free: 1024.9,
-            mem_used: 7167.1,
-            mem_cache: 597.9,
-            swa_total: 4096,
-            swa_free: 469.2,
-            swa_used: 3626.8,
-            swa_cache: 607.9,
-
-            disk_total: 400,
-            disk_free: 150,
-            disk_used: 250,
+            uptime: 0,
+            cpu: 0,
+            thr_total: 0,
+            thr_running: 0,
+            thr_sleeping: 0,
+            thr_stopped: 0,
+            thr_zombie: 0,
+            mem_total: 0,
+            mem_free: 0,
+            mem_used: 0,
+            mem_cache: 0,
+            swa_total: 0,
+            swa_free: 0,
+            swa_used: 0,
+            swa_cache: 0,
+            disk_total: 0,
+            disk_free: 0,
+            disk_used: 0,
           },
-          chart: [
-            {label: "10:32", "value": {cpu: "35.8", memory: "43.3", disk: "43.5"}},
-            {label: "10:40", "value": {cpu: "35", memory: "43.6", disk: "43.6"}},
-            {label: "10:50", "value": {cpu: "37.4", memory: "43.6", disk: "43.6"}},
-            {label: "11:00", "value": {cpu: "38.3", memory: "43.5", disk: "43.7"}},
-            {label: "11:10", "value": {cpu: "34.5", memory: "44.6", disk: "43.8"}},
-            {label: "11:20", "value": {cpu: "35.4", memory: "43.3", disk: "43.8"}},
-            {label: "11:30", "value": {cpu: "34.5", memory: "43.1", disk: "43.9"}},
-            {label: "11:40", "value": {cpu: "30.6", memory: "42.1", disk: "44"}},
-            {label: "11:50", "value": {cpu: "32.3", memory: "41.5", disk: "44"}},
-            {label: "12:00", "value": {cpu: "23.2", memory: "41.3", disk: "44"}},
-            {label: "12:10", "value": {cpu: "18.3", memory: "39.8", disk: "44"}},
-            {label: "12:20", "value": {cpu: "19.4", memory: "40.6", disk: "44"}},
-            {label: "12:30", "value": {cpu: "18", memory: "39.3", disk: "44"}},
-            {label: "12:40", "value": {cpu: "19.7", memory: "39.1", disk: "44"}},
-            {label: "12:50", "value": {cpu: "18.2", memory: "39", disk: "44"}},
-            {label: "13:00", "value": {cpu: "18.9", memory: "39.3", disk: "44"}},
-            {label: "13:10", "value": {cpu: "18.1", memory: "38.9", disk: "44"}},
-            {label: "13:20", "value": {cpu: "24", memory: "40.1", disk: "44.1"}},
-            {label: "13:30", "value": {cpu: "30.3", memory: "40.8", disk: "44.1"}},
-            {label: "13:40", "value": {cpu: "34.1", memory: "42.4", disk: "44.2"}},
-            {label: "13:50", "value": {cpu: "31.9", memory: "41.9", disk: "44.2"}},
-            {label: "14:00", "value": {cpu: "33", memory: "41.6", disk: "44.3"}},
-            {label: "14:10", "value": {cpu: "32.4", memory: "42.1", disk: "44.3"}},
-            {label: "14:20", "value": {cpu: "27.4", memory: "45.7", disk: "44.3"}}
-          ]
+          chart: []
         },
         request: {
-          avg: 0.23,
-          total: 10000,
-          per: {
-            second: 3,
-            minute: 180,
-            hour: 10800,
-            day: 259200,
+          current: {
+            avg: 0.23,
+            total: 10000,
+            per: {
+              second: 3,
+              minute: 180,
+              hour: 10800,
+              day: 259200,
+            }
           },
-          chart: [
-            {label: "10:31", value: "1629"},
-            {label: "10:40", value: "2026"},
-            {label: "10:50", value: "2068"},
-            {label: "11:00", value: "2116"},
-            {label: "11:10", value: "1748"},
-            {label: "11:20", value: "1903"},
-            {label: "11:30", value: "1684"},
-            {label: "11:40", value: "1539"},
-            {label: "11:50", value: "1513"},
-            {label: "12:00", value: "815"},
-            {label: "12:10", value: "613"},
-            {label: "12:20", value: "707"},
-            {label: "12:30", value: "659"},
-            {label: "12:40", value: "692"},
-            {label: "12:50", value: "585"},
-            {label: "13:00", value: "588"},
-            {label: "13:10", value: "544"}
-          ],
+          chart: [],
           dt: {
-            recordsTotal: 500,
-            recordsFiltered: 500,
-            data: []
-          }
-        },
-        routes: {
-          dt: {
-            recordsTotal: 500,
-            recordsFiltered: 500,
-            data: []
+            keys: {
+              data: [],
+              recordsTotal: 0,
+              recordsFiltered: 0
+            },
+            reqs: {
+              data: [],
+              recordsTotal: 0,
+              recordsFiltered: 0
+              }
           }
         }
       }
@@ -329,20 +285,20 @@ export default {
 
         chart: {
           data: {
-            labels: Object.values(this.report.server.chart).map(i => i.label),
+            labels: Object.keys(this.report.server.chart).reverse().map(i => i),
             datasets: [{
               label: 'CPU',
-              data: Object.values(this.report.server.chart).map(i => i.value.cpu),
+              data: Object.values(this.report.server.chart).reverse().map(i => i.cpu),
               borderWidth: 1,
               pointRadius: 1
             }, {
               label: 'Memory',
-              data: Object.values(this.report.server.chart).map(i => i.value.memory),
+              data: Object.values(this.report.server.chart).reverse().map(i => i.mem_used * 100 / this.report.server.current.mem_total),
               borderWidth: 1,
               pointRadius: 1
             }, {
               label: 'Disk',
-              data: Object.values(this.report.server.chart).map(i => i.value.disk),
+              data: Object.values(this.report.server.chart).reverse().map(i => i.disk_used * 100 / this.report.server.current.disk_total),
               borderWidth: 1,
               pointRadius: 1
             }]
@@ -360,20 +316,20 @@ export default {
     },
     request() {
       return {
-        avg: this.secondFormat(this.report.request.avg),
-        avg_class: this.report.request.avg < .5 ? 'text-success' : (this.report.request.avg < 1 ? 'text-warning' : 'text-danger'),
-        total: this.report.request.total,
-        per_second: this.report.request.per.second,
-        per_minute: this.report.request.per.minute,
-        per_hour: this.report.request.per.hour,
-        per_day: this.report.request.per.day,
+        avg: this.secondFormat(this.report.request.current.avg),
+        avg_class: this.report.request.current.avg < .5 ? 'text-success' : (this.report.request.current.avg < 1 ? 'text-warning' : 'text-danger'),
+        total: this.report.request.current.total,
+        per_second: this.report.request.current.per.second,
+        per_minute: this.report.request.current.per.minute,
+        per_hour: this.report.request.current.per.hour,
+        per_day: this.report.request.current.per.day,
 
         chart: {
           data: {
-            labels: Object.values(this.report.request.chart).map(i => i.label),
+            labels: Object.keys(this.report.request.chart).reverse().map(i => i),
             datasets: [{
               label: 'Requests',
-              data: Object.values(this.report.request.chart).map(i => i.value),
+              data: Object.values(this.report.request.chart).reverse().map(i => i),
               borderWidth: 1,
               pointRadius: 1
             }]
@@ -389,14 +345,14 @@ export default {
         },
         dt: {
           columns: [
-            {data: "date", title: "Date"},
-            {data: "end", title: "End Time"},
+            {data: "start", title: "Date"},
+            {data: "duration", title: "End Time"},
             {data: "memory", title: "Memory"},
             {data: "profile_count", title: "Count"},
             {data: "http_code", title: "Code"},
             {data: "method", title: "Method"},
-            {data: "uri", title: "URI"},
-            {data: "error", title: "ERR"}
+            {data: "url", title: "URL"},
+            {data: "error_count", title: "ERR"}
           ],
           options: {
             order: [[0, 'desc']]
@@ -408,8 +364,8 @@ export default {
       return {
         dt: {
           columns: [
-            {data: "route_key", title: "Route Key"},
-            {data: "count", title: "Count"},
+            {data: "key", title: "Request Key"},
+            {data: "hits", title: "Hits"},
             {data: "avg", title: "Avg"},
             {data: "min", title: "Min"},
             {data: "max", title: "Max"},
@@ -421,6 +377,9 @@ export default {
         }
       }
     }
+  },
+  mounted() {
+    this.updateData();
   }
 }
 </script>

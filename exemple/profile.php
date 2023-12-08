@@ -14,7 +14,7 @@ echo "Start add 1000 requests:" . PHP_EOL;
 $start = microtime(true);
 $avgCount = 0;
 $avgTime = 0;
-for ($i = 0; $i < 1000; $i++) {
+for ($i = 0; $i < 100000; $i++) {
     $request = new Analysis\Request("test-" . ($i % 10), false);
 
     # Example of use
@@ -47,19 +47,19 @@ for ($i = 0; $i < 1000; $i++) {
     $request->stop(); // ccc-lvl-2
     $request->stop(); // ccc-lvl-1
 
-    for ($j = 1; $j <= 500; $j++) {
+    for ($j = 1; $j <= 100; $j++) {
         $request->start("ddd-lvl-$j");
     }
 
-    $start_avg = microtime(true);
+    $start_save_avg = microtime(true);
     $request->save();
-    $time_time = microtime(true) - $start_avg;
+    $time_save_avg = microtime(true) - $start_save_avg;
 
-    $avgTime = (($avgTime * $avgCount) + $time_time) / ($avgCount + 1);
+    $avgTime = (($avgTime * $avgCount) + $time_save_avg) / ($avgCount + 1);
     $avgCount++;
 
     unset($request, $drive);
-    echo "- " . $i . ', time: ' . (microtime(true) - $start_avg) . PHP_EOL;
+    echo "- " . $i . ', time: ' . $time_save_avg . PHP_EOL;
 }
 
 echo 'End' . PHP_EOL;
