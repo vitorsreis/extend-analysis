@@ -5,15 +5,16 @@
  * @author Vitor Reis <vitor@d5w.com.br>
  */
 
-require_once __DIR__ . '/utils/config.php';
+require_once __DIR__ . '/config.php';
 
 use VSR\Extend\Analysis;
 
 echo "Start add 1000 requests:" . PHP_EOL;
 
+$sstart = microtime(true);
 $avgCount = 0;
 $avgTime = 0;
-for ($i = 0; $i < 100000; $i++) {
+for ($i = 0; $i < 1000; $i++) {
     $request = new Analysis\Request("test-" . ($i % 10), false);
 
     # Example of use
@@ -64,3 +65,4 @@ for ($i = 0; $i < 100000; $i++) {
 echo 'End' . PHP_EOL;
 echo '- Memory: ' . (memory_get_peak_usage() / 1024 / 1024) . PHP_EOL;
 echo '- Avg time: ' . $avgTime . PHP_EOL;
+echo '- Total time: ' . (microtime(true) - $sstart) . PHP_EOL;

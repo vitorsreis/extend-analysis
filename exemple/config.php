@@ -1,4 +1,8 @@
 <?php
+/**
+ * This file is part of vsr extend analysis
+ * @author Vitor Reis <vitor@d5w.com.br>
+ */
 
 /**
  * This file is part of vsr extend analysis
@@ -15,7 +19,7 @@ if (!is_dir(DIR_STORAGE)) {
 }
 
 # Autoload
-require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 use VSR\Extend\Analysis;
 
 # Set driver

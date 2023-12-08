@@ -86,7 +86,17 @@ class PDOSQLite extends AbstractModel implements ModelInterface
                     throw new Exception($statement->errorInfo()[2], $statement->errorInfo()[1]);
                 }
                 $this->lastId = $this->instance->lastInsertId();
-                $statement->rowCount() && $this->affected[] = isset($fields['id']) ? $fields['id'] : $this->lastId;
+                if ($statement->rowCount()) {
+                    if (isset($fields['key']) && isset($fields['type']) && isset($fields['ref'])) {
+                        $id = [$fields['key'], $fields['type'], $fields['ref']];
+                    } elseif (isset($fields['key'])) {
+                        $id = $fields['key'];
+                    } else {
+                        $id = $this->lastId;
+                    }
+                    $this->affected[] = $id;
+                    unset($id);
+                }
                 $this->rows = $statement->fetchAll(PDO::FETCH_ASSOC) ?: [];
             }
             return !$this->instance->inTransaction() || $this->instance->commit();
@@ -102,38 +112,21 @@ class PDOSQLite extends AbstractModel implements ModelInterface
     public function install()
     {
         $this->query("
-            CREATE TABLE IF NOT EXISTS `server` (
-                `id` varchar(255) NOT NULL,
+            CREATE TABLE IF NOT EXISTS `hits` (
+                `key` varchar(255) NOT NULL,
+                `type` varchar(255) NOT NULL,
                 `ref` varchar(255) DEFAULT NULL,
                 `count` bigint DEFAULT NULL,
                 `value` float DEFAULT NULL,
-                `create_at` datetime DEFAULT CURRENT_TIMESTAMP,
-                `update_at` datetime DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (`id`,`ref`)
+                `create_at` integer DEFAULT CURRENT_TIMESTAMP,
+                `update_at` integer DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`key`,`type`,`ref`)
             )
         ");
-        $this->query("
-            CREATE TABLE IF NOT EXISTS `routes` (
-                `id` integer PRIMARY KEY,
-                `route_key` varchar(255) NOT NULL,
-                `avg` float DEFAULT NULL,
-                `min` float DEFAULT NULL,
-                `max` float DEFAULT NULL,
-                `last` float DEFAULT NULL,
-                `hits` bigint DEFAULT NULL,
-                `create_at` datetime DEFAULT CURRENT_TIMESTAMP,
-                `update_at` datetime DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE (`route_key`)
-            )
-        ");
-        $this->query("CREATE INDEX IF NOT EXISTS `idx_routes-hits` ON `routes` (`hits`)");
-        $this->query("CREATE INDEX IF NOT EXISTS `idx_routes-avg` ON `routes` (`avg`)");
-        $this->query("CREATE INDEX IF NOT EXISTS `idx_routes-min` ON `routes` (`min`)");
-        $this->query("CREATE INDEX IF NOT EXISTS `idx_routes-max` ON `routes` (`max`)");
         $this->query("
             CREATE TABLE IF NOT EXISTS `requests` (
                 `id` integer PRIMARY KEY AUTOINCREMENT,
-                `route_key_id` integer NOT NULL,
+                `key` varchar(255) NOT NULL,
                 `start` float NOT NULL,
                 `end` float NOT NULL,
                 `duration` float NOT NULL,
@@ -159,6 +152,7 @@ class PDOSQLite extends AbstractModel implements ModelInterface
                 `profile_count` int NOT NULL
             )
         ");
+        $this->query("CREATE INDEX IF NOT EXISTS `idx_requests-key` ON `requests` (`key`)");
         $this->query("CREATE INDEX IF NOT EXISTS `idx_requests-start` ON `requests` (`start`)");
         $this->query("CREATE INDEX IF NOT EXISTS `idx_requests-end` ON `requests` (`end`)");
         $this->query("CREATE INDEX IF NOT EXISTS `idx_requests-duration` ON `requests` (`duration`)");
@@ -171,13 +165,30 @@ class PDOSQLite extends AbstractModel implements ModelInterface
         $this->query("CREATE INDEX IF NOT EXISTS `idx_requests-memory` ON `requests` (`memory`)");
         $this->query("CREATE INDEX IF NOT EXISTS `idx_requests-memory_peak` ON `requests` (`memory_peak`)");
         $this->query("CREATE INDEX IF NOT EXISTS `idx_requests-profile_count` ON `requests` (`profile_count`)");
-        $this->query("CREATE INDEX IF NOT EXISTS `idx_requests-route_key_id` ON `requests` (`route_key_id`)");
+
+        $this->query("
+            CREATE TABLE IF NOT EXISTS `requests_avg` (
+                `key` varchar(255) PRIMARY KEY,
+                `avg` float DEFAULT NULL,
+                `min` float DEFAULT NULL,
+                `max` float DEFAULT NULL,
+                `last` float DEFAULT NULL,
+                `hits` bigint DEFAULT NULL,
+                `create_at` integer DEFAULT CURRENT_TIMESTAMP,
+                `update_at` integer DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
+        $this->query("CREATE INDEX IF NOT EXISTS `idx_requests_avg-avg` ON `requests_avg` (`avg`)");
+        $this->query("CREATE INDEX IF NOT EXISTS `idx_requests_avg-min` ON `requests_avg` (`min`)");
+        $this->query("CREATE INDEX IF NOT EXISTS `idx_requests_avg-max` ON `requests_avg` (`max`)");
+        $this->query("CREATE INDEX IF NOT EXISTS `idx_requests_avg-hits` ON `requests_avg` (`hits`)");
+
         $this->query("
             CREATE TABLE IF NOT EXISTS `profiles` (
+                `key` varchar(255) NOT NULL,
                 `request_id` integer,
-                `id` integer,
+                `index` integer,
                 `parent_id` integer,
-                `title` varchar(255) NOT NULL,
                 `start` float NOT NULL,
                 `end` float NOT NULL,
                 `duration` float NOT NULL,
@@ -185,239 +196,206 @@ class PDOSQLite extends AbstractModel implements ModelInterface
                 `memory_peak` bigint DEFAULT NULL,
                 `error` json DEFAULT NULL,
                 `extra` json DEFAULT NULL,
-                PRIMARY KEY (`request_id`,`id`,`parent_id`)
+                PRIMARY KEY (`request_id`,`index`,`parent_id`)
             )
         ");
+        // $this->query("
+        //     CREATE TABLE IF NOT EXISTS `profiles_avg` (
+        //         `key` varchar(255) PRIMARY KEY,
+        //         `avg` float DEFAULT NULL,
+        //         `min` float DEFAULT NULL,
+        //         `max` float DEFAULT NULL,
+        //         `last` float DEFAULT NULL,
+        //         `hits` bigint DEFAULT NULL,
+        //         `create_at` integer DEFAULT CURRENT_TIMESTAMP,
+        //         `update_at` integer DEFAULT CURRENT_TIMESTAMP
+        //     )
+        // ");
+        // $this->query("CREATE INDEX IF NOT EXISTS `idx_profiles_avg-avg` ON `profiles_avg` (`avg`)");
+        // $this->query("CREATE INDEX IF NOT EXISTS `idx_profiles_avg-min` ON `profiles_avg` (`min`)");
+        // $this->query("CREATE INDEX IF NOT EXISTS `idx_profiles_avg-max` ON `profiles_avg` (`max`)");
+        // $this->query("CREATE INDEX IF NOT EXISTS `idx_profiles_avg-hits` ON `profiles_avg` (`hits`)");
+    }
+
+    private function queryHit(...$values)
+    {
+        if ($this->onConflictSupport) {
+            $this->query("
+                INSERT INTO `hits`
+                    (`key`, `type`, `ref`, `count`, `value`)
+                VALUES
+                    (:key, :type, :ref, 1, :value)
+                ON CONFLICT (`key`, `type`, `ref`) DO UPDATE SET
+                    `count` = `count` + 1,
+                    `value` = ((`value` * `count`) + :value) / (`count` + 1),
+                    `update_at` = CURRENT_TIMESTAMP
+            ", ...$values);
+        } else {
+            $this->query("
+                UPDATE `hits` SET
+                    `count` = `count` + 1,
+                    `value` = ((`value` * `count`) + :value) / (`count` + 1),
+                    `update_at` = CURRENT_TIMESTAMP
+                WHERE
+                    `key` = :key
+                    AND `type` = :type
+                    AND `ref` = :ref
+            ", ...$values);
+
+            $values = array_filter($values, function ($i) {
+                return !in_array([$i['key'], $i['type'], $i['ref']], $this->affected, true);
+            });
+
+            if ($values) {
+                $this->query("
+                    INSERT INTO `hits`
+                        (`key`, `type`, `ref`, `count`, `value`)
+                    VALUES
+                        (:key, :type, :ref, 1, :value)
+                ", ...$values);
+            }
+        }
+        unset($values);
+    }
+
+    private function queryAvg($collection, ...$values)
+    {
+        if ($this->onConflictSupport) {
+            $this->query("
+                INSERT INTO `$collection`
+                    (`key`, `hits`, `avg`, `min`, `max`, `last`)
+                VALUES
+                    (:key, 1, :duration, :duration, :duration, :duration)
+                ON CONFLICT (`key`) DO UPDATE SET
+                    `hits` = `hits` + 1,
+                    `avg` = ((`avg` * `hits`) + :duration) / (`hits` + 1),
+                    `min` = CASE WHEN `min` > :duration THEN :duration ELSE `min` END,
+                    `max` = CASE WHEN `max` < :duration THEN :duration ELSE `max` END,
+                    `last` = :duration,
+                    `update_at` = CURRENT_TIMESTAMP
+            ", ...$values);
+        } else {
+            $this->query("
+                UPDATE `$collection` SET
+                    `hits` = `hits` + 1,
+                    `avg` = ((`avg` * `hits`) + :duration) / (`hits` + 1),
+                    `min` = CASE WHEN `min` > :duration THEN :duration ELSE `min` END,
+                    `max` = CASE WHEN `max` < :duration THEN :duration ELSE `max` END,
+                    `last` = :duration,
+                    `update_at` = CURRENT_TIMESTAMP
+                WHERE
+                    `key` = :key
+            ", ...$values);
+
+            $values = array_filter($values, function ($i) {
+                return !in_array($i['key'], $this->affected, true);
+            });
+
+            if ($values) {
+                $this->query("
+                    INSERT INTO `$collection`
+                        (`key`, `hits`, `avg`, `min`, `max`, `last`)
+                    VALUES
+                        (:key, 1, :duration, :duration, :duration, :duration)
+                ", ...$values);
+            }
+        }
+    }
+
+    private function queryInsert($collection, ...$values)
+    {
+        $c = $v = [];
+        foreach (current($values) as $k => $i) {
+            $c[] = "`$k`";
+            $v[] = ":$k";
+        }
+
+        $this->query("
+            INSERT INTO `$collection` (
+                " . implode(',' . PHP_EOL, $c) . "
+            ) VALUES (
+                " . implode(',' . PHP_EOL, $v) . "
+            )
+        ", ...$values);
+
+        unset($c, $v, $collection, $values);
+
+        return $this->lastId;
     }
 
     public function processRequest($request)
     {
-        $this->processAvg($this->group(
-            static::HIT_NO_GROUP,
-            ['id' => 'current-req', 'value' => $request['duration']]
+        // Requests duration avg and hits
+        $this->queryHit(...$this->hitGroup(
+            self::HIT_NO_GROUP | self::HIT_ALL,
+            ['key' => 'req', 'value' => $request['duration']]
         ));
-        unset($group, $values);
 
-        $request['route_key_id'] = $this->processRouteKey($request['route_key'], $request['duration']);
+        // Request key duration avg and hits
+        $this->queryAvg(
+            'requests_avg',
+            ['key' => $request['key'], 'duration' => $request['duration']]
+        );
+
         $request['has_error'] = $request['error'] ? 1 : 0;
         $profile = $request['profile'];
-        unset($request['route_key'], $request['profile']);
+        unset($request['profile']);
 
-        foreach ($request as $key => $value) {
-            if (is_array($value) || is_object($value)) {
-                $request[$key] = $value
-                    ? (json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: null)
-                    : null;
-            }
-        }
-
-        $columns = $values = [];
-        foreach (array_keys($request) as $i) {
-            $columns[] = "`$i`";
-            $values[] = ":$i";
-        }
-
-        $this->query("
-            INSERT INTO `requests` (" . implode(",", $columns) . ")
-            VALUES (" . implode(",", $values) . ")
-        ", $request);
+        $request_id = $this->queryInsert('requests', $request);
         unset($request);
 
-        $request_id = $this->getLastId();
-
-        foreach ($profile as $i => $item) {
-            $profile[$i]['id'] = $i;
-            $profile[$i]['request_id'] = $request_id;
-            $profile[$i]['extra'] = $profile[$i]['extra']
-                ? (json_encode($profile[$i]['extra'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: null)
+        foreach ($profile as $index => $item) {
+            $profile[$index]['index'] = $index;
+            $profile[$index]['request_id'] = $request_id;
+            $profile[$index]['extra'] = $profile[$index]['extra']
+                ? (json_encode($profile[$index]['extra'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: null)
                 : null;
-            $profile[$i]['error'] = $profile[$i]['error']
-                ? (json_encode($profile[$i]['error'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: null)
+            $profile[$index]['error'] = $profile[$index]['error']
+                ? (json_encode($profile[$index]['error'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: null)
                 : null;
         }
-        unset($i, $item);
+        unset($index, $item);
 
-        $columns = $values = [];
-        foreach (array_keys(current($profile)) as $i) {
-            $columns[] = "`$i`";
-            $values[] = ":$i";
-        }
+        $this->queryInsert('profiles', ...$profile);
 
-        $this->query("
-            INSERT INTO `profiles` (" . implode(",", $columns) . ")
-            VALUES (" . implode(",", $values) . ")
-        ", ...$profile);
-        unset($profile, $columns, $values);
+        // $this->queryAvg('profiles_avg', ...array_map(function ($i) {
+        //     return ['key' => $i['key'], 'duration' => $i['duration']];
+        // }, $profile));
 
-        return $request_id;
-    }
-
-    private function processRouteKey($route_key, $duration)
-    {
-        if ($this->onConflictSupport) {
-            $this->query("
-                INSERT INTO `routes`
-                    (`route_key`, `hits`, `avg`, `min`, `max`, `last`)
-                VALUES
-                    (:route_key, 1, :duration, :duration, :duration, :duration)
-                ON CONFLICT (`route_key`) DO UPDATE SET
-                    `hits` = `hits` + 1,
-                    `avg` = ((`avg` * `hits`) + :duration) / (`hits` + 1),
-                    `min` = CASE WHEN `min` > :duration THEN :duration ELSE `min` END,
-                    `max` = CASE WHEN `max` < :duration THEN :duration ELSE `max` END,
-                    `last` = :duration,
-                    `update_at` = CURRENT_TIMESTAMP
-            ", [
-                ':route_key' => $route_key,
-                ':duration' => $duration
-            ]);
-        } else {
-            $this->query("
-                UPDATE `routes` SET
-                    `hits` = `hits` + 1,
-                    `avg` = ((`avg` * `hits`) + :duration) / (`hits` + 1),
-                    `min` = CASE WHEN `min` > :duration THEN :duration ELSE `min` END,
-                    `max` = CASE WHEN `max` < :duration THEN :duration ELSE `max` END,
-                    `last` = :duration,
-                    `update_at` = CURRENT_TIMESTAMP
-                WHERE
-                    `route_key` = :route_key
-            ", [
-                ':route_key' => $route_key,
-                ':duration' => $duration
-            ]);
-
-            if (!$this->getAffectedCount()) {
-                $this->query("
-                    INSERT INTO `routes`
-                        (`route_key`, `hits`, `avg`, `min`, `max`, `last`)
-                    VALUES
-                        (:route_key, 1, :duration, :duration, :duration, :duration)
-                ", [
-                    ':route_key' => $route_key,
-                    ':duration' => $duration
-                ]);
-
-                return $this->getLastId();
-            }
-        }
-
-        $this->query("
-            SELECT
-                `id`
-            FROM
-                `routes`
-            WHERE
-                `route_key` = :route_key
-        ", [
-            ':route_key' => $route_key
-        ]);
-
-        return $this->rows[0]['id'];
-    }
-
-    private function processAvg($hits)
-    {
-        if ($this->onConflictSupport) {
-            $this->query("
-                INSERT INTO `server`
-                    (`id`, `ref`, `count`, `value`)
-                VALUES
-                    (:id, :ref, 1, :value)
-                ON CONFLICT (`id`, `ref`) DO UPDATE SET
-                    `count` = `count` + 1,
-                    `value` = ((`value` * `count`) + :value) / (`count` + 1),
-                    `update_at` = CURRENT_TIMESTAMP
-            ", ...$hits);
-        } else {
-            $this->query("
-                UPDATE `server` SET
-                    `count` = `count` + 1,
-                    `value` = ((`value` * `count`) + :value) / (`count` + 1),
-                    `update_at` = CURRENT_TIMESTAMP
-                WHERE
-                    `id` = :id
-                    AND `ref` = :ref
-            ", ...$hits);
-
-            $hits = array_filter($hits, function ($i) {
-                return !in_array($i['id'], $this->affected, true);
-            });
-
-            if (!$this->getAffectedCount()) {
-                $this->query("
-                    INSERT INTO `server`
-                        (`id`, `ref`, `count`, `value`)
-                    VALUES
-                        (:id, :ref, 1, :value)
-                ", ...$hits);
-            }
-        }
-        unset($hits);
+        unset($profile);
     }
 
     public function processServer($data)
     {
-        // TODO: Implement processServer() method.
-    }
+        $this->queryHit(...$this->hitGroup(
+            self::HIT_NO_GROUP,
+            ['key' => 'uptime', 'value' => $data['uptime']],
+            ['key' => 'cpu', 'value' => $data['cpu']],
+            ['key' => 'thr_total', 'value' => $data['thr_total']],
+            ['key' => 'thr_running', 'value' => $data['thr_running']],
+            ['key' => 'thr_sleeping', 'value' => $data['thr_sleeping']],
+            ['key' => 'thr_stopped', 'value' => $data['thr_stopped']],
+            ['key' => 'thr_zombie', 'value' => $data['thr_zombie']],
+            ['key' => 'mem_total', 'value' => $data['mem_total']],
+            ['key' => 'mem_free', 'value' => $data['mem_free']],
+            ['key' => 'mem_used', 'value' => $data['mem_used']],
+            ['key' => 'mem_cache', 'value' => $data['mem_cache']],
+            ['key' => 'swa_total', 'value' => $data['swa_total']],
+            ['key' => 'swa_free', 'value' => $data['swa_free']],
+            ['key' => 'swa_used', 'value' => $data['swa_used']],
+            ['key' => 'swa_cache', 'value' => $data['swa_cache']],
+            ['key' => 'disk_total', 'value' => $data['disk_total']],
+            ['key' => 'disk_free', 'value' => $data['disk_free']],
+            ['key' => 'disk_used', 'value' => $data['disk_used']]
+        ));
 
+        $this->queryHit(...$this->hitGroup(
+            self::HIT_ALL,
+            ['key' => 'cpu', 'value' => $data['cpu']],
+            ['key' => 'mem_used', 'value' => $data['mem_used']],
+            ['key' => 'disk_used', 'value' => $data['disk_used']]
+        ));
 
-    public function put($collection, ...$data)
-    {
-        if (!$data) {
-            return false;
-        }
-
-        $columns = $values = [];
-        foreach (current($data) as $k => $i) {
-            $columns[] = "`$k`";
-            $values[] = ":$k";
-        }
-
-        return $this->query("
-            REPLACE INTO `$collection` (
-                " . implode(',' . PHP_EOL, $columns) . "
-            ) VALUES (
-                " . implode(',' . PHP_EOL, $values) . "
-            )
-        ", $data);
-    }
-
-    public function avg($collection, ...$data)
-    {
-        if (!$data) {
-            return false;
-        }
-
-        $this->query("
-            UPDATE `$collection` SET
-                `value` = ((`value` * `count`) + :value) / (`count` + 1),
-                `count` = `count` + 1
-            WHERE
-                `id` = :id
-        ", $data);
-
-        $data = array_filter($data, function ($i) {
-            return !in_array($i['id'], $this->affected, true);
-        });
-
-        $data && $this->query("
-            INSERT INTO `$collection`
-                (`id`, `count`, `value`)
-            VALUES
-                (:id, 1, :value)
-        ", $data);
-
-        return !$data;
-    }
-
-    public function getLastId()
-    {
-        return $this->lastId;
-    }
-
-    public function getAffectedCount()
-    {
-        return $this->affected === false ? false : count($this->affected);
+        unset($data);
     }
 }

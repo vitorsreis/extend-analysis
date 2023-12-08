@@ -12,7 +12,7 @@ use VSR\Extend\Analysis;
 
 class Request
 {
-    protected $routeKey;
+    protected $key;
 
     protected $parent_id = [];
 
@@ -30,12 +30,12 @@ class Request
     protected $beforeSave;
 
     /**
-     * @param string $routeKey Route key
+     * @param string $key Request key
      * @param array $options Options
      */
-    public function __construct($routeKey, $options = [ 'autoSave' => true, 'autoError' => true])
+    public function __construct($key, $options = ['autoSave' => true, 'autoError' => true])
     {
-        $this->routeKey = $routeKey;
+        $this->key = $key;
         $this->start('profile');
         !empty($options['autoError']) && set_error_handler([$this, 'error'], E_ALL);
         !empty($options['autoError']) && set_exception_handler([$this, 'error']);
@@ -48,18 +48,18 @@ class Request
     }
 
     /**
-     * Start new activity
-     * @param string $title
+     * Profile start, level up
+     * @param string $key Profile key
      * @return static
      */
-    public function start($title)
+    public function start($key)
     {
-        $id = count($this->profile);
+        $index = count($this->profile);
         $parent_id = !$this->parent_id ? -1 : end($this->parent_id);
 
-        $this->profile[$id] = [
+        $this->profile[$index] = [
             'parent_id' => $parent_id,
-            'title' => $title,
+            'key' => $key,
             'start' => microtime(true),
             'end' => null,
             'duration' => null,
@@ -67,14 +67,14 @@ class Request
             'error' => []
         ];
         $this->profileCount++;
-        $this->parent_id[] = $id;
+        $this->parent_id[] = $index;
 
         return $this;
     }
 
     /**
-     * Stop current activity
-     * @param mixed $extra Extra info about activity
+     * Profile stop, level down
+     * @param mixed $extra Extra info about profile
      * @return static
      */
     public function stop($extra = null)
@@ -83,10 +83,10 @@ class Request
             return $this;
         }
 
-        $id = array_pop($this->parent_id);
-        $this->profile[$id]['extra'] = $extra;
-        $this->profile[$id]['end'] = $end = microtime(true);
-        $this->profile[$id]['duration'] = $end - $this->profile[$id]['start'];
+        $index = array_pop($this->parent_id);
+        $this->profile[$index]['extra'] = $extra;
+        $this->profile[$index]['end'] = $end = microtime(true);
+        $this->profile[$index]['duration'] = $end - $this->profile[$index]['start'];
         return $this;
     }
 
@@ -152,7 +152,7 @@ class Request
         }
 
         $request = [
-            'route_key' => $this->routeKey,
+            'key' => $this->key,
             'start' => $this->profile[0]['start'],
             'end' => $this->profile[0]['end'],
             'duration' => $this->profile[0]['end'] - $this->profile[0]['start'],

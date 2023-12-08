@@ -7,9 +7,9 @@
 
 namespace VSR\Extend\Analysis;
 
-class Dashboard
+class Viewer
 {
-    public static function dashboard()
+    public static function execute()
     {
         if (isset($_GET['d5whub-extend-analysis']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST = json_decode(file_get_contents('php://input'), true) ?: [];
@@ -17,13 +17,22 @@ class Dashboard
         }
 
         switch (isset($_GET['d5whub-extend-analysis']) ? $_GET['d5whub-extend-analysis'] : null) {
-            case 'public-file':
-                static::loadPublicFile();
+            case 'file':
+                if (!isset($_REQUEST['file'])) {
+                    self::outputStatus(400);
+                    exit;
+                }
+
+                static::outputFile($_REQUEST['file']);
+                exit;
+
+            case 'current':
+                static::outputCurrent();
                 exit;
 
             default:
-                static::view();
-                break;
+                self::outputFile('index.html');
+                exit;
         }
     }
 
@@ -33,27 +42,35 @@ class Dashboard
         exit;
     }
 
-    private static function outputFile($file, $mimeType = null)
+    private static function outputFile($file)
     {
+        $dir = realpath(__DIR__ . '/Viewer/public');
+        $file = realpath("$dir/$file");
+
+        if (substr($file, 0, strlen($dir)) !== $dir) {
+            self::outputStatus(403);
+        }
+
+        if (!file_exists($file)) {
+            self::outputStatus(404);
+        }
+
         $etag = "W/\"" . md5_file($file) . "\"";
 
         # Cache
         $cache = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? $_SERVER['HTTP_IF_NONE_MATCH'] : '';
         if ($cache === $etag) {
-            header('HTTP/1.1 304 Not Modified');
+            self::outputStatus(304);
             exit;
         }
 
-        if (null === $mimeType) {
-            $mimeType = [
-                'html' => 'text/html',
-                'vue' => 'application/vue',
-                'js' => 'application/javascript'
-            ];
-
-            $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
-            $mimeType = isset($mimeType[$ext]) ? $mimeType[$ext] : 'text/plain';
-        }
+        $mimeType = [
+            'html' => 'text/html',
+            'vue' => 'text/html',
+            'js' => 'application/javascript'
+        ];
+        $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        $mimeType = isset($mimeType[$ext]) ? $mimeType[$ext] : 'text/plain';
 
         header("Content-Type: $mimeType; charset=utf-8");
         header('Content-Length: ' . filesize($file));
@@ -64,28 +81,11 @@ class Dashboard
         exit;
     }
 
-    private static function view()
+    private static function outputCurrent()
     {
-        self::outputFile(__DIR__ . '/Dashboard/index.html');
     }
 
-    private static function loadPublicFile()
+    private static function view()
     {
-        if (!isset($_REQUEST['file'])) {
-            self::outputStatus(400);
-        }
-
-        $dir = realpath(__DIR__ . '/Dashboard/public');
-        $component = realpath("$dir/$_REQUEST[file]");
-
-        if (substr($component, 0, strlen($dir)) !== $dir) {
-            self::outputStatus(403);
-        }
-
-        if (!file_exists($component)) {
-            self::outputStatus(404);
-        }
-
-        self::outputFile($component);
     }
 }

@@ -3,6 +3,11 @@
   ~ @author Vitor Reis <vitor@d5w.com.br>
   -->
 
+<!--
+  ~ This file is part of vsr extend analysis
+  ~ @author Vitor Reis <vitor@d5w.com.br>
+  -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -46,8 +51,8 @@
 </script>
 <script type="text/javascript">
     let url = new URL(window.location.href);
-    url.searchParams.set('d5whub-extend-analysis', 'public-file');
-    url.searchParams.set('file', 'bootstrap.js');
+    url.searchParams.set('d5whub-extend-analysis', 'file');
+    url.searchParams.set('file', '/app.js');
 
     let script = document.createElement('script');
     script.src = url.href;
