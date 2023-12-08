@@ -44,6 +44,12 @@ abstract class AbstractModel
      */
     const HIT_ALL = self::HIT_SECOND_10 | self::HIT_MINUTE | self::HIT_MINUTE_10 | self::HIT_HOUR | self::HIT_DAY;
 
+    abstract public function install();
+
+    abstract public function processRequest($request);
+
+    abstract public function processServer($data);
+
     /**
      * @param int $group
      * @param array{id:string, value:mixed} ...$data

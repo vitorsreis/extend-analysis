@@ -3,6 +3,11 @@
   - @author Vitor Reis <vitor@d5w.com.br>
   -->
 
+<!--
+  - This file is part of vsr extend analysis
+  - @author Vitor Reis <vitor@d5w.com.br>
+  -->
+
 <template>
   <div class="container-fluid vh-100 w-100 d-flex flex-column align-content-stretch">
     <div class="row">
@@ -58,7 +63,7 @@
 </template>
 
 <script>
-const {Doughnut: DoughnutChat, Line: LineChat} = window.VueChart
+const {Doughnut: DoughnutChat, Line: LineChat} = window.ChartJS;
 const DatatableEx = analysis.component('components/DatatableEx.vue');
 
 export default {

@@ -5,11 +5,12 @@
  * @author Vitor Reis <vitor@d5w.com.br>
  */
 
-namespace VSR\Extend\Analysis\Server\Normalize;
+namespace VSR\Extend\Analysis\Server;
 
-use VSR\Extend\Analysis\Contract\Server\NormalizeInterface;
+use InvalidArgumentException;
+use VSR\Extend\Analysis\Contract\AbstractServer;
 
-class Top implements NormalizeInterface
+class Top extends AbstractServer
 {
     private static $pattern = "
         ~
@@ -21,8 +22,12 @@ class Top implements NormalizeInterface
         ~xs
     ";
 
-    public static function normalize($input)
+    public static function execute($input = null)
     {
+        if (null === $input) {
+            throw new InvalidArgumentException('Input is required');
+        }
+
         if (!preg_match(static::$pattern, $input, $matches)) {
             return false;
         }
@@ -36,7 +41,7 @@ class Top implements NormalizeInterface
         $disk_free = (float)number_format(disk_free_space('/') / 1024 / 1024 / 1024, 3, '.', '');
         $disk_used = (float)number_format($disk_total - $disk_free, 3, '.', '');
 
-        return [
+        static::process([
             'uptime' => $uptime,
             'cpu' => (float)$matches['cpu'],
             'thr_total' => (int)$matches['thr_total'],
@@ -55,6 +60,6 @@ class Top implements NormalizeInterface
             'disk_total' => $disk_total,
             'disk_free' => $disk_free,
             'disk_used' => $disk_used
-        ];
+        ]);
     }
 }

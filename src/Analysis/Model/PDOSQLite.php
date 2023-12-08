@@ -11,9 +11,8 @@ use Exception;
 use PDO;
 use RuntimeException;
 use VSR\Extend\Analysis\Contract\AbstractModel;
-use VSR\Extend\Analysis\Contract\ModelInterface;
 
-class PDOSQLite extends AbstractModel implements ModelInterface
+class PDOSQLite extends AbstractModel
 {
     /**
      * @var PDO
@@ -39,7 +38,7 @@ class PDOSQLite extends AbstractModel implements ModelInterface
 
         $this->instance = new PDO("sqlite:$database");
         $this->onConflictSupport = version_compare(
-            $x = $this->instance->query('select sqlite_version()')->fetch()[0],
+            $this->instance->query('select sqlite_version()')->fetch()[0],
             '3.24.0',
             '>='
         );
@@ -99,7 +98,7 @@ class PDOSQLite extends AbstractModel implements ModelInterface
                 }
                 $this->rows = $statement->fetchAll(PDO::FETCH_ASSOC) ?: [];
             }
-            return !$this->instance->inTransaction() || $this->instance->commit();
+            !$this->instance->inTransaction() || $this->instance->commit();
         } catch (Exception $th) {
             $this->instance->inTransaction() && $this->instance->rollBack();
             $this->lastId = false;

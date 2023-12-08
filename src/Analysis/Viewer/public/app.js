@@ -5,21 +5,17 @@
 
 import * as Vue from 'vue';
 import VueSfc from 'vue3-sfc-loader';
-
 import 'bootstrap';
 import DataTable from 'datatables.net-vue3';
 import DataTablesCore from 'datatables.net-bs5';
+import * as ChartJS from 'chart.js';
+import * as VueChart from "vue-chartjs";
+
+console.log(VueSfc);
 
 DataTable.use(DataTablesCore);
-window.DataTable = DataTable;
-
-import * as ChartJS from 'chart.js';
-
-window.ChartJS = ChartJS;
-window.ChartJS.Chart.register(...window.ChartJS.registerables);
-
-import * as VueChart from "vue-chartjs";
-window.VueChart = VueChart;
+ChartJS.Chart.register(...ChartJS.registerables);
+window.ChartJS = VueChart;
 
 window.analysis = {
     href: window.location.href,
@@ -56,8 +52,6 @@ if (url.searchParams.get('d5whub-extend-analysis') === 'request') {
     main = analysis.component('/page/Dashboard.vue');
 }
 
-window.Vue = Vue;
-// window.Vue.$bvConfig = {};
 
 const app = Vue.createApp(main);
 app.use(DataTable);

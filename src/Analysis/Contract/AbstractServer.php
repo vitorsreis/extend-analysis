@@ -5,41 +5,37 @@
  * @author Vitor Reis <vitor@d5w.com.br>
  */
 
-namespace VSR\Extend\Analysis;
+namespace VSR\Extend\Analysis\Contract;
 
 use VSR\Extend\Analysis;
 
-class Server
+abstract class AbstractServer
 {
+    abstract public static function execute();
+
     /**
      * @param array{
-     *      uptime:int,
-     *      cpu:float,
-     *      thr_total:int,
-     *      thr_running:int,
-     *      thr_sleeping:int,
-     *      thr_stopped:int,
-     *      thr_zombie:int,
-     *      mem_total:float,
-     *      mem_free:float,
-     *      mem_used:float,
-     *      mem_cache:float,
-     *      swa_total:float,
-     *      swa_free:float,
-     *      swa_used:float,
-     *      swa_cache:float,
-     *      disk_total:float,
-     *      disk_free:float,
-     *      disk_used:float
-     *  }|false $normalized
-     * uptime: in minutes
-     * cpu: in percent
-     * mem: in GB
-     * swa: in GB
-     * disk: in GB
-     * @return bool
+     *     uptime:int,
+     *     cpu:float,
+     *     thr_total:int,
+     *     thr_running:int,
+     *     thr_sleeping:int,
+     *     thr_stopped:int,
+     *     thr_zombie:int,
+     *     mem_total:float,
+     *     mem_free:float,
+     *     mem_used:float,
+     *     mem_cache:float,
+     *     swa_total:float,
+     *     swa_free:float,
+     *     swa_used:float,
+     *     swa_cache:float,
+     *     disk_total:float,
+     *     disk_free:float,
+     *     disk_used:float
+     * }|false $normalized
      */
-    public static function save($normalized)
+    protected static function process($normalized)
     {
         if (!$normalized) {
             return false;

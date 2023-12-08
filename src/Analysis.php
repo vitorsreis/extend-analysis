@@ -8,17 +8,17 @@
 namespace VSR\Extend;
 
 use RuntimeException;
-use VSR\Extend\Analysis\Contract\ModelInterface;
+use VSR\Extend\Analysis\Contract\AbstractModel;
 
 class Analysis
 {
     /**
-     * @var ModelInterface
+     * @var AbstractModel
      */
     private static $model;
 
     /**
-     * @return ModelInterface
+     * @return AbstractModel
      */
     public static function getModel()
     {
@@ -28,7 +28,7 @@ class Analysis
         return static::$model;
     }
 
-    public static function setModel(ModelInterface $model)
+    public static function setModel(AbstractModel $model)
     {
         static::$model = $model;
     }

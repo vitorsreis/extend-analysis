@@ -11,7 +11,7 @@ use VSR\Extend\Analysis;
 
 echo "Start add 1000 requests:" . PHP_EOL;
 
-$sstart = microtime(true);
+$start = microtime(true);
 $avgCount = 0;
 $avgTime = 0;
 for ($i = 0; $i < 1000; $i++) {
@@ -51,18 +51,18 @@ for ($i = 0; $i < 1000; $i++) {
         $request->start("ddd-lvl-$j");
     }
 
-    $start = microtime(true);
+    $start_avg = microtime(true);
     $request->save();
-    $time = microtime(true) - $start;
+    $time_time = microtime(true) - $start_avg;
 
-    $avgTime = (($avgTime * $avgCount) + $time) / ($avgCount + 1);
+    $avgTime = (($avgTime * $avgCount) + $time_time) / ($avgCount + 1);
     $avgCount++;
 
     unset($request, $drive);
-    echo "- " . $i . ', time: ' . (microtime(true) - $start) . PHP_EOL;
+    echo "- " . $i . ', time: ' . (microtime(true) - $start_avg) . PHP_EOL;
 }
 
 echo 'End' . PHP_EOL;
 echo '- Memory: ' . (memory_get_peak_usage() / 1024 / 1024) . PHP_EOL;
 echo '- Avg time: ' . $avgTime . PHP_EOL;
-echo '- Total time: ' . (microtime(true) - $sstart) . PHP_EOL;
+echo '- Total time: ' . (microtime(true) - $start) . PHP_EOL;
