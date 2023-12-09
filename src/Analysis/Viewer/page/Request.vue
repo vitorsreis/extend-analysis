@@ -3,15 +3,15 @@
   - @author Vitor Reis <vitor@d5w.com.br>
   -->
 
+<template>
+
+</template>
+
 <script>
 export default {
   name: "Request"
 }
 </script>
-
-<template>
-
-</template>
 
 <style scoped>
 

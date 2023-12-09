@@ -22,8 +22,12 @@ class Viewer
                 static::outputFile($_REQUEST['file']);
                 exit;
 
-            case 'data':
-                static::outputViewData();
+            case 'viewer-data':
+                static::outputViewerData();
+                exit;
+
+            case 'request-data':
+                static::outputRequestData();
                 exit;
 
             default:
@@ -89,12 +93,20 @@ class Viewer
         exit;
     }
 
-    private static function outputViewData()
+    private static function outputViewerData()
     {
-        $data = json_encode(Analysis::getModel()->getViewerData($_REQUEST), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $data = json_encode(
+            Analysis::getModel()->getViewerData($_REQUEST),
+            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+        );
+
         header('Content-Type: application/json; charset=utf-8');
         header('Content-Length: ' . strlen($data));
         echo static::gzip($data);
         exit;
+    }
+
+    private static function outputRequestData()
+    {
     }
 }

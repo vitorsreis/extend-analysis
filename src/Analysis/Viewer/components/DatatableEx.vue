@@ -77,11 +77,6 @@ export default {
       ...props.options
     }
   },
-  watch: {
-    loading(newValue, oldValue) {
-      this.redraw()
-    }
-  },
 
   methods: {
     redraw(data = undefined, recordsTotal = undefined, recordsFiltered = undefined, error = false) {
@@ -111,20 +106,35 @@ export default {
   justify-content: space-evenly
 }
 
-.dataTables_wrapper > .dt-row + .row {
+.datatable .dataTables_wrapper > .dt-row + .row {
   height: 34px
 }
 
-.dataTables_wrapper > .dt-row {
+.datatable .dataTables_wrapper > .dt-row {
   height: calc(100% - 34px)
 }
 
-.dataTables_processing {
+.datatable .dataTables_processing {
   border: 0;
   background: transparent
 }
 
-.dataTables_empty {
+.datatable .dataTables_empty {
   vertical-align: middle
+}
+
+.datatable .dt-row > div {
+  overflow: auto;
+}
+
+@media (max-width: 767px) {
+  .datatable .dt-row {
+    padding-left: calc(var(--bs-gutter-x) * .5);
+    padding-right: calc(var(--bs-gutter-x) * .5);
+  }
+
+  .datatable .dt-row > div {
+    padding: 0;
+  }
 }
 </style>

@@ -229,14 +229,20 @@ class PDOSQLite extends AbstractModel
                     (:key, :type, :ref, 1, :value)
                 ON CONFLICT (`key`, `type`, `ref`) DO UPDATE SET
                     `count` = `count` + 1,
-                    `value` = CASE WHEN `type` = '' AND `ref` = '' THEN :value ELSE ((`value` * `count`) + :value) / (`count` + 1) END,
+                    `value` = CASE
+                        WHEN `type` = '' AND `ref` = '' THEN :value
+                        ELSE ((`value` * `count`) + :value) / (`count` + 1)
+                    END,
                     `update_at` = CURRENT_TIMESTAMP
             ", ...$values);
         } else {
             $this->query("
                 UPDATE `hits` SET
                     `count` = `count` + 1,
-                    `value` = CASE WHEN `type` = '' AND `ref` = '' THEN :value ELSE ((`value` * `count`) + :value) / (`count` + 1) END,
+                    `value` = CASE
+                        WHEN `type` = '' AND `ref` = '' THEN :value
+                        ELSE ((`value` * `count`) + :value) / (`count` + 1)
+                    END,
                     `update_at` = CURRENT_TIMESTAMP
                 WHERE
                     `key` = :key
@@ -456,14 +462,33 @@ class PDOSQLite extends AbstractModel
                         'recordsTotal' => 0,
                         'recordsFiltered' => 0,
                         'data' => [
-                            # ['id' => 0, 'key' => '', 'start' => 0.0, 'end' => 0.0, 'duration' => 0.0, 'memory' => 0.0, 'profile_count' => 0, 'http_code' => 0, 'method' => '', 'uri' => '', 'error_count' => false]
+                            /*[
+                                'id' => 0,
+                                'key' => '',
+                                'start' => 0.0,
+                                'end' => 0.0,
+                                'duration' => 0.0,
+                                'memory' => 0.0,
+                                'profile_count' => 0,
+                                'http_code' => 0,
+                                'method' => '',
+                                'uri' => '',
+                                'error_count' => false
+                            ]*/
                         ]
                     ],
                     'keys' => [
                         'recordsTotal' => 0,
                         'recordsFiltered' => 0,
                         'data' => [
-                            # ['key' => '', 'count' => 0, 'avg' => 0.0, 'min' => 0.0, 'max' => 0.0, 'last' => 0.0]
+                            /*[
+                                'key' => '',
+                                'count' => 0,
+                                'avg' => 0.0,
+                                'min' => 0.0,
+                                'max' => 0.0,
+                                'last' => 0.0
+                            ]*/
                         ]
                     ],
                 ]
@@ -532,8 +557,11 @@ class PDOSQLite extends AbstractModel
             ]);
             foreach ($this->rows as $i) {
                 foreach (json_decode('[' . $i['json'] . ']', true) as $j) {
-                    !isset($json['server']['chart'][$i['ref']]) && $json['server']['chart'][$i['ref']] = ['cpu' => 0.0, 'mem_used' => 0.0, 'disk_used' => 0.0];
-                    !isset($json['request']['chart'][$i['ref']]) && $json['request']['chart'][$i['ref']] = 0;
+                    !isset($json['server']['chart'][$i['ref']])
+                    && $json['server']['chart'][$i['ref']] = ['cpu' => 0.0, 'mem_used' => 0.0, 'disk_used' => 0.0];
+
+                    !isset($json['request']['chart'][$i['ref']])
+                    && $json['request']['chart'][$i['ref']] = 0;
 
                     if ($j['key'] === 'req') {
                         $json['request']['chart'][$i['ref']] = round($j['count'] ?: 0);

@@ -5,15 +5,12 @@
 
 <template>
   <div class="container-fluid vh-100 w-100 d-flex flex-column align-content-stretch">
-    <div class="position-fixed d-flex justify-content-between align-items-center mt-2 me-2" style="right:0;top:0;width:120px">
+    <div class="position-fixed d-flex justify-content-between align-items-center mt-2 me-3"
+         style="right:0;top:0;width:85px">
       <span><span :class="'text-'+reportStatus.class">⬤</span> {{ reportStatus.text }}</span>
-      <select v-model="groupBy" class="form-select form-select-sm" style="width:60px;display:inline;float:right">
-        <option value="s10">10s</option>
-        <option value="i">1m</option>
-        <option value="i10">10m</option>
-        <option value="H">1h</option>
-        <option value="d">1d</option>
-      </select>
+      <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#settings">
+        <i class="fa fa-cog"></i>
+      </button>
     </div>
     <div class="row">
       <div class="col-md-4 col-12">
@@ -23,14 +20,34 @@
             <DoughnutChat id="chart-disk" :data="server.disk.chart.data" :options="server.disk.chart.options"/>
             <DoughnutChat id="chart-memory" :data="server.memory.chart.data" :options="server.memory.chart.options"/>
           </div>
-          <div id="current" class="col-md-10 col-12 h-100 d-flex flex-column align-items-start justify-content-between py-2">
+          <div id="current"
+               class="col-md-10 col-12 h-100 d-flex flex-column align-items-start justify-content-between py-2">
             <span class="badge text-dark-emphasis">Up: {{ server.uptime }}</span>
-            <span class="badge text-dark-emphasis">CPU: <span :class="'text-'+server.cpu.color.bg">{{ server.cpu.percent }}</span></span>
-            <span class="badge text-dark-emphasis">Disk: <span :class="'text-'+server.disk.color.bg">{{ server.disk.percent }}</span> ({{ server.disk.used }}/{{ server.disk.total }}, {{ server.disk.free }} free)</span>
-            <span class="badge text-dark-emphasis">Memory: <span :class="'text-'+server.memory.color.bg">{{ server.memory.percent }}</span> ({{ server.memory.used }}/{{ server.memory.total }}, {{ server.memory.free }} free / {{ server.memory.cache }} cache)</span>
-            <span class="badge text-dark-emphasis">Swap: {{ server.swap.used }}/{{ server.swap.total }}, {{ server.swap.free }} free / {{ server.swap.cache }} cache</span>
-            <span class="badge text-dark-emphasis">Tasks: {{ server.thread.running }} running, {{ server.thread.total }} total, {{ server.thread.sleeping }} sleeping, {{ server.thread.stopped }} stopped, {{ server.thread.zombie }} zombie</span>
-            <span class="badge text-dark-emphasis">Requests: <span :class="'text-'+request.color.bg">{{ request.avg }}</span>, hits: {{ request.total }} total ({{ request.per_second }}/s, {{ request.per_minute }}/m, {{ request.per_hour }}/h, {{ request.per_day }}/d)</span>
+            <span class="badge text-dark-emphasis">
+              CPU: <span :class="'text-'+server.cpu.color.bg">{{ server.cpu.percent }}</span>
+            </span>
+            <span class="badge text-dark-emphasis">
+              Disk: <span :class="'text-'+server.disk.color.bg">{{ server.disk.percent }}</span>
+              ({{ server.disk.used }}/{{ server.disk.total }}, {{ server.disk.free }} free)
+            </span>
+            <span class="badge text-dark-emphasis">
+              Memory: <span :class="'text-'+server.memory.color.bg">{{ server.memory.percent }}</span>
+              ({{ server.memory.used }}/{{ server.memory.total }}, {{ server.memory.free }} free,
+              {{ server.memory.cache }} cache)
+            </span>
+            <span class="badge text-dark-emphasis">
+              Swap: {{ server.swap.used }}/{{ server.swap.total }}, {{ server.swap.free }} free,
+              {{ server.swap.cache }} cache
+            </span>
+            <span class="badge text-dark-emphasis">
+              Tasks: {{ server.thread.running }} running, {{ server.thread.total }} total,
+              {{ server.thread.sleeping }} sleeping, {{ server.thread.stopped }} stopped, {{ server.thread.zombie }} zombie
+            </span>
+            <span class="badge text-dark-emphasis">
+              Requests: <span :class="'text-'+request.color.bg">{{ request.avg }}</span>,
+              hits: {{ request.total }} ({{ request.per_second }}/s, {{ request.per_minute }}/m,
+              {{ request.per_hour }}/h, {{ request.per_day }}/d)
+            </span>
           </div>
         </div>
       </div>
@@ -50,54 +67,198 @@
       </div>
     </div>
   </div>
+
+  <div class="modal fade" id="settings" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Settings</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <h5>Auto-update settings</h5>
+          <div class="row mb-1">
+            <label for="input-autoUpdateInterval" class="col-form-label col-sm-4">Interval</label>
+            <div class="col-sm-8">
+              <div class="input-group">
+                <input type="number" min="0" id="input-autoUpdateInterval" class="form-control"
+                       v-model="settings.autoUpdateInterval"/>
+                <span class="input-group-text">ms</span>
+              </div>
+            </div>
+          </div>
+
+          <h5 class="mt-3">Chart settings</h5>
+          <div class="row mb-1">
+            <label for="input-chartGroupBy" class="col-form-label col-sm-4">Group by</label>
+            <div class="col-sm-8">
+              <select id="input-chartGroupBy" class="form-select" v-model="settings.chart.groupBy" @change="updateData">
+                <option value="s10">10 Seconds</option>
+                <option value="i">Minutes</option>
+                <option value="i10">10 Minutes</option>
+                <option value="H">Hours</option>
+                <option value="d">Days</option>
+              </select>
+            </div>
+          </div>
+          <div class="row mb-1">
+            <label for="input-chartLength" class="col-form-label col-sm-4">Length</label>
+            <div class="col-sm-8">
+              <input type="number" min="10" max="1000" id="input-chartLength" class="form-control"
+                     v-model="settings.chart.length" @change="updateData"/>
+            </div>
+          </div>
+
+          <h5 class="mt-3">Tolerance settings</h5>
+          <div class="row mb-1">
+            <label for="input-tolerance-server-cpu" class="col-form-label col-sm-4">CPU</label>
+            <div class="col-sm-8">
+              <div class="row g-3">
+                <div class="col">
+                  <div class="input-group">
+                    <span class="input-group-text bg-warning">Warning</span>
+                    <input type="number" min="0" max="100" id="input-tolerance-server-cpu-warning" class="form-control"
+                           v-model="settings.tolerance.server.cpu.warning"/>
+                    <span class="input-group-text">%</span>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="input-group">
+                    <span class="input-group-text bg-danger text-white">Danger</span>
+                    <input type="number" min="0" max="100" id="input-tolerance-server-cpu-danger" class="form-control"
+                           v-model="settings.tolerance.server.cpu.danger"/>
+                    <span class="input-group-text">%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row mb-1">
+            <label for="input-tolerance-server-disk" class="col-form-label col-sm-4">Disk</label>
+            <div class="col-sm-8">
+              <div class="row g-3">
+                <div class="col">
+                  <div class="input-group">
+                    <span class="input-group-text bg-warning">Warning</span>
+                    <input type="number" min="0" max="100" id="input-tolerance-server-disk-warning" class="form-control"
+                           v-model="settings.tolerance.server.disk.warning"/>
+                    <span class="input-group-text">%</span>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="input-group">
+                    <span class="input-group-text bg-danger text-white">Danger</span>
+                    <input type="number" min="0" max="100" id="input-tolerance-server-disk-danger" class="form-control"
+                           v-model="settings.tolerance.server.disk.danger"/>
+                    <span class="input-group-text">%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row mb-1">
+            <label for="input-tolerance-server-memory" class="col-form-label col-sm-4">Memory</label>
+            <div class="col-sm-8">
+              <div class="row g-3">
+                <div class="col">
+                  <div class="input-group">
+                    <span class="input-group-text bg-warning">Warning</span>
+                    <input type="number" min="0" max="100" id="input-tolerance-server-memory-warning"
+                           class="form-control" v-model="settings.tolerance.server.memory.warning"/>
+                    <span class="input-group-text">%</span>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="input-group">
+                    <span class="input-group-text bg-danger text-white">Danger</span>
+                    <input type="number" min="0" max="100" id="input-tolerance-server-memory-danger"
+                           class="form-control" v-model="settings.tolerance.server.memory.danger"/>
+                    <span class="input-group-text">%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row mb-1">
+            <label for="input-tolerance-request-duration" class="col-form-label col-sm-4">Request Duration</label>
+            <div class="col-sm-8">
+              <div class="row g-3">
+                <div class="col">
+                  <div class="input-group">
+                    <span class="input-group-text bg-warning">Warning</span>
+                    <input type="number" min="0" id="input-tolerance-request-duration-warning" class="form-control"
+                           v-model="settings.tolerance.request.duration.warning"/>
+                    <span class="input-group-text">ms</span>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="input-group">
+                    <span class="input-group-text bg-danger text-white">Danger</span>
+                    <input type="number" min="0" id="input-tolerance-request-duration-danger" class="form-control"
+                           v-model="settings.tolerance.request.duration.danger"/>
+                    <span class="input-group-text">ms</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row mb-1">
+            <label for="input-tolerance-request-memory" class="col-form-label col-sm-4">Request Memory</label>
+            <div class="col-sm-8">
+              <div class="row g-3">
+                <div class="col">
+                  <div class="input-group">
+                    <span class="input-group-text bg-warning">Warning</span>
+                    <input type="number" min="0" id="input-tolerance-request-memory-warning" class="form-control"
+                           v-model="settings.tolerance.request.memory.warning"/>
+                    <span class="input-group-text">MB</span>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="input-group">
+                    <span class="input-group-text bg-danger text-white">Danger</span>
+                    <input type="number" min="0" id="input-tolerance-request-memory-danger" class="form-control"
+                           v-model="settings.tolerance.request.memory.danger"/>
+                    <span class="input-group-text">MB</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row mb-1">
+            <label for="input-tolerance-request-profile_count" class="col-form-label col-sm-4">Request Profile
+              Count</label>
+            <div class="col-sm-8">
+              <div class="row g-3">
+                <div class="col">
+                  <div class="input-group">
+                    <span class="input-group-text bg-warning">Warning</span>
+                    <input type="number" min="0" id="input-tolerance-request-profile_count-warning" class="form-control"
+                           v-model="settings.tolerance.request.profile_count.warning"/>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="input-group">
+                    <span class="input-group-text bg-danger text-white">Danger</span>
+                    <input type="number" min="0" id="input-tolerance-request-profile_count-danger" class="form-control"
+                           v-model="settings.tolerance.request.profile_count.danger"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
 const {Doughnut: DoughnutChat, Line: LineChat} = window.ChartJS;
 const DatatableEx = analysis.component('components/DatatableEx.vue');
 
-const tolerance = {
-  server: {
-    cpu: {
-      80: {bg: 'danger', text: 'white'},
-      60: {bg: 'warning', text: 'black'},
-      default: {bg: 'secondary', text: 'white'}
-    },
-    disk: {
-      80: {bg: 'danger', text: 'white'},
-      60: {bg: 'warning', text: 'black'},
-      'default': {bg: 'secondary', text: 'white'}
-    },
-    memory: {
-      80: {bg: 'danger', text: 'white'},
-      60: {bg: 'warning', text: 'black'},
-      default: {bg: 'secondary', text: 'white'}
-    }
-  },
-  request: {
-    duration: {
-      1: {bg: 'danger', text: 'white'},
-      0.5: {bg: 'warning', text: 'black'},
-      default: {bg: 'secondary', text: 'white'}
-    },
-    memory: {
-      30: {bg: 'danger', text: 'white'},
-      10: {bg: 'warning', text: 'black'},
-      default: {bg: 'secondary', text: 'white'}
-    },
-    http_code: {
-      500: {bg: 'danger', text: 'white'},
-      400: {bg: 'warning', text: 'black'},
-      default: {bg: 'secondary', text: 'white'}
-    },
-    profile_count: {
-      1000: {bg: 'danger', text: 'white'},
-      500: {bg: 'warning', text: 'black'},
-      default: {bg: 'secondary', text: 'white'}
-    },
-  }
-}
 export function dtPageLength() {
+  if (window.innerWidth < 768) return 10;
   let height = window.innerHeight - 325;
   let pageLength = Math.floor(height / 25);
   if (pageLength < 10) pageLength = 10;
@@ -161,10 +322,12 @@ export default {
       }
     },
     toleranceColors(colors, value) {
-      let result = colors.default;
+      let result = {bg: 'secondary-subtle', text: 'black'};
       for (let i in colors) {
-        if (i !== 'default' && value >= i) {
-          result = colors[i];
+        if (i !== 'default' && value >= colors[i]) {
+          result = i === 'danger'
+              ? {bg: 'danger', text: 'white'}
+              : {bg: 'warning', text: 'black'};
           break;
         }
       }
@@ -221,9 +384,9 @@ export default {
       }
 
       let start_time = new Date().getTime();
-      this.report = await analysis.action('data', {
-        chartGroupBy: this.groupBy,
-        chartLength: 100,
+      this.report = await analysis.action('viewer-data', {
+        chartGroupBy: this.settings.chart.groupBy,
+        chartLength: this.settings.chart.length,
         dtReqsStart: this.$refs['dt-reqs']?.$refs.dt.dt.page.info().start || 0,
         dtReqsLength: this.$refs['dt-reqs']?.$refs.dt.dt.page.info().length || 10,
         dtReqsOrder,
@@ -250,15 +413,53 @@ export default {
       this.reportStatus.class = 'success';
       this.reportStatus.text = ` ${this.secondFormat((end_time - start_time) / 1000)}`;
 
-      this.updateDataTimeout = setTimeout(() => this.updateData(), 2000);
+      this.updateDataTimeout = setTimeout(() => this.updateData(), this.settings.autoUpdateInterval);
     }
   },
   data() {
     return {
       updateDataTimeout: null,
-
-      groupBy: 's10',
-
+      settings: {
+        autoUpdateInterval: 1500,
+        chart: {
+          groupBy: 's10',
+          length: 100
+        },
+        tolerance: {
+          server: {
+            cpu: {
+              danger: 80,
+              warning: 60
+            },
+            disk: {
+              danger: 80,
+              warning: 60
+            },
+            memory: {
+              danger: 80,
+              warning: 60
+            }
+          },
+          request: {
+            duration: {
+              danger: 1000,
+              warning: 500
+            },
+            memory: {
+              danger: 30,
+              warning: 10
+            },
+            http_code: {
+              danger: 500,
+              warning: 400
+            },
+            profile_count: {
+              danger: 1000,
+              warning: 500
+            },
+          }
+        }
+      },
       report: {},
       reportStatus: {
         text: '...',
@@ -288,14 +489,14 @@ export default {
         uptime,
         cpu: {
           percent: this.percentFormat(cpu_percent),
-          color: this.toleranceColors(tolerance.server.cpu, cpu_percent),
+          color: this.toleranceColors(this.settings.tolerance.server.cpu, cpu_percent),
           chart: {
             data: {
               labels: ['Free', 'Usage'],
               datasets: [
                 {
                   data: [this.numberFormat(100 - parseFloat(cpu_percent), 1), this.numberFormat(cpu_percent, 1)],
-                  backgroundColor: ['rgb(127,190,132)', 'rgb(255 138 163)']
+                  backgroundColor: ['rgb(25,135,84)', 'rgba(220,53,69,1)']
                 }
               ]
             },
@@ -310,7 +511,7 @@ export default {
         },
         disk: {
           percent: this.percentFormat(disk_percent),
-          color: this.toleranceColors(tolerance.server.disk, disk_percent),
+          color: this.toleranceColors(this.settings.tolerance.server.disk, disk_percent),
           free: this.sizeFormat(this.report.server?.current.disk_free),
           used: this.sizeFormat(this.report.server?.current.disk_used),
           total: this.sizeFormat(this.report.server?.current.disk_total, ' GB'),
@@ -320,7 +521,7 @@ export default {
               datasets: [
                 {
                   data: [this.numberFormat(100 - disk_percent, 1), this.numberFormat(disk_percent, 1)],
-                  backgroundColor: ['rgb(127,190,132)', 'rgb(255 138 163)']
+                  backgroundColor: ['rgb(25,135,84)', 'rgba(220,53,69,1)']
                 }
               ]
             },
@@ -335,7 +536,7 @@ export default {
         },
         memory: {
           percent: this.percentFormat(memory_percent),
-          color: this.toleranceColors(tolerance.server.memory, memory_percent),
+          color: this.toleranceColors(this.settings.tolerance.server.memory, memory_percent),
           free: this.sizeFormat(this.report.server?.current.mem_free),
           used: this.sizeFormat(this.report.server?.current.mem_used),
           total: this.sizeFormat(this.report.server?.current.mem_total, ' MB'),
@@ -346,7 +547,7 @@ export default {
               datasets: [
                 {
                   data: [this.numberFormat(100 - memory_percent, 1), this.numberFormat(memory_percent, 1)],
-                  backgroundColor: ['rgb(127,190,132)', 'rgb(255 138 163)']
+                  backgroundColor: ['rgb(25,135,84)', 'rgba(220,53,69,1)']
                 }
               ]
             },
@@ -376,22 +577,28 @@ export default {
 
         chart: {
           data: {
-            labels: Object.keys(this.report.server?.chart || {}).map(i => this.labelFormat(i, this.groupBy)),
+            labels: Object.keys(this.report.server?.chart || {}).map(i => this.labelFormat(i, this.settings.chart.groupBy)),
             datasets: [{
               label: 'CPU',
               data: Object.values(this.report.server?.chart || {}).map(i => this.numberFormat(i.cpu, 1)),
               borderWidth: 1,
-              pointRadius: 1
+              pointRadius: 1,
+              backgroundColor: 'rgb(220,53,69)',
+              borderColor: 'rgb(220,53,69)'
             }, {
               label: 'Memory',
               data: Object.values(this.report.server?.chart || {}).map(i => this.numberFormat(i.mem_used * 100 / this.report.server?.current.mem_total, 1)),
               borderWidth: 1,
-              pointRadius: 1
+              pointRadius: 1,
+              backgroundColor: 'rgb(13,110,253)',
+              borderColor: 'rgb(13,110,253)'
             }, {
               label: 'Disk',
               data: Object.values(this.report.server?.chart || {}).map(i => this.numberFormat(i.disk_used * 100 / this.report.server?.current.disk_total, 1)),
               borderWidth: 1,
-              pointRadius: 1
+              pointRadius: 1,
+              backgroundColor: 'rgb(108,117,125)',
+              borderColor: 'rgb(108,117,125)'
             }]
           },
           options: {
@@ -408,7 +615,7 @@ export default {
     request() {
       return {
         avg: this.secondFormat(this.report.request?.current.avg),
-        color: this.toleranceColors(tolerance.request.duration, this.report.request?.current.avg),
+        color: this.toleranceColors(this.settings.tolerance.request.duration, this.report.request?.current.avg * 1000),
         total: this.numberFormat(this.report.request?.current.total, 0),
         per_second: this.numberFormat(this.report.request?.current.per.second, 0),
         per_minute: this.numberFormat(this.report.request?.current.per.minute, 0),
@@ -417,12 +624,14 @@ export default {
 
         chart: {
           data: {
-            labels: Object.keys(this.report.request?.chart || {}).map(i => this.labelFormat(i, this.groupBy)),
+            labels: Object.keys(this.report.request?.chart || {}).map(i => this.labelFormat(i, this.settings.chart.groupBy)),
             datasets: [{
               label: 'Requests',
               data: Object.values(this.report.request?.chart || {}).map(i => this.numberFormat(i, 0)),
               borderWidth: 1,
-              pointRadius: 1
+              pointRadius: 1,
+              backgroundColor: 'rgb(13,110,253)',
+              borderColor: 'rgb(13,110,253)'
             }]
           },
           options: {
@@ -440,16 +649,17 @@ export default {
               {
                 data: "start",
                 title: "Date",
+                className: 'text-center',
                 render: (data) => {
                   return this.dateFormat('Y-m-d H:i:s', data);
                 }
               },
               {
                 data: "duration",
-                title: "End Time",
+                title: "Duration",
                 className: 'text-center',
                 render: (data) => {
-                  let color = this.toleranceColors(tolerance.request.duration, data);
+                  let color = this.toleranceColors(this.settings.tolerance.request.duration, data * 1000);
                   return `<span class="badge bg-${color.bg} text-${color.text}">${this.secondFormat(data)}</span>`;
                 }
               },
@@ -458,7 +668,7 @@ export default {
                 title: "Memory",
                 className: 'text-center',
                 render: (data) => {
-                  let color = this.toleranceColors(tolerance.request.memory, data);
+                  let color = this.toleranceColors(this.settings.tolerance.request.memory, data);
                   return `<span class="badge bg-${color.bg} text-${color.text}">${this.sizeFormat(data, 'MB')}</span>`;
                 }
               },
@@ -467,7 +677,7 @@ export default {
                 title: "Count",
                 className: 'text-center',
                 render: (data) => {
-                  let color = this.toleranceColors(tolerance.request.profile_count, data);
+                  let color = this.toleranceColors(this.settings.tolerance.request.profile_count, data);
                   return `<span class="badge bg-${color.bg} text-${color.text}">${this.numberFormat(data, 0)}</span>`;
                 }
               },
@@ -476,7 +686,7 @@ export default {
                 title: "Code",
                 className: 'text-center',
                 render: (data) => {
-                  let color = this.toleranceColors(tolerance.request.http_code, data);
+                  let color = this.toleranceColors(this.settings.tolerance.request.http_code, data);
                   return `<span class="badge bg-${color.bg} text-${color.text}">${data}</span>`;
                 }
               },
@@ -548,7 +758,7 @@ export default {
                 title: "Avg",
                 className: 'text-center',
                 render: (data) => {
-                  let color = this.toleranceColors(tolerance.request.duration, data);
+                  let color = this.toleranceColors(this.settings.tolerance.request.duration, data * 1000);
                   return `<span class="badge bg-${color.bg} text-${color.text}">${this.secondFormat(data)}</span>`;
                 }
               },
@@ -557,7 +767,7 @@ export default {
                 title: "Min",
                 className: 'text-center min',
                 render: (data) => {
-                  let color = this.toleranceColors(tolerance.request.duration, data);
+                  let color = this.toleranceColors(this.settings.tolerance.request.duration, data * 1000);
                   return `<span class="badge bg-${color.bg} text-${color.text}">${this.secondFormat(data)}</span>`;
                 }
               },
@@ -566,7 +776,7 @@ export default {
                 title: "Max",
                 className: 'text-center max',
                 render: (data) => {
-                  let color = this.toleranceColors(tolerance.request.duration, data);
+                  let color = this.toleranceColors(this.settings.tolerance.request.duration, data * 1000);
                   return `<span class="badge bg-${color.bg} text-${color.text}">${this.secondFormat(data)}</span>`;
                 }
               },
@@ -576,7 +786,7 @@ export default {
                 className: 'text-center last',
                 orderable: false,
                 render: (data) => {
-                  let color = this.toleranceColors(tolerance.request.duration, data);
+                  let color = this.toleranceColors(this.settings.tolerance.request.duration, data * 1000);
                   return `<span class="badge bg-${color.bg} text-${color.text}">${this.secondFormat(data)}</span>`;
                 }
               }
@@ -628,6 +838,11 @@ export default {
   mounted() {
     this.updateData();
     window.addEventListener('resize', () => this.resize());
+
+    this.settings = {...this.settings, ...JSON.parse(localStorage.getItem('analysis.settings') || "{}")};
+    for (let i of document.querySelectorAll('#settings input, #settings select')) {
+      i.addEventListener('change', () => localStorage.setItem('analysis.settings', JSON.stringify(this.settings)));
+    }
   }
 }
 </script>
@@ -653,11 +868,49 @@ export default {
 }
 
 #dt-reqs tbody tr:hover td {
-  background: #eee
+  background: rgb(13, 110, 253);
+  color: #fff
+}
+
+#dt-keys td:nth-child(2),
+#dt-keys td:nth-child(3),
+#dt-keys td:nth-child(4),
+#dt-keys td:nth-child(5),
+#dt-keys td:nth-child(6) {
+  width: 1%;
+  min-width: 64px
+}
+
+#dt-reqs td:nth-child(1) {
+  width: 1%;
+  min-width: 110px
+}
+
+#dt-reqs td:nth-child(2),
+#dt-reqs td:nth-child(3),
+#dt-reqs td:nth-child(4),
+#dt-reqs td:nth-child(5),
+#dt-reqs td:nth-child(6) {
+  width: 1%;
+  min-width: 64px
+}
+
+#dt-reqs td:nth-child(8) {
+  width: 1%
 }
 </style>
 
 <style scoped>
+.input-group-text {
+  padding: 0;
+  justify-content: center;
+  width: 55px
+}
+
+input + .input-group-text {
+  width: 30px
+}
+
 #current,
 #chart-server,
 #chart-request {
@@ -681,7 +934,7 @@ export default {
 
 #dts > div {
   height: calc(100vh - 260px);
-  min-height: 300px;
+  min-height: 315px;
 }
 
 @media (max-width: 767px) {
@@ -695,7 +948,8 @@ export default {
   }
 
   #dts > div {
-    max-height: calc(50vh - 1em);
+    max-height: 315px;
+    margin-bottom: 30px !important;
   }
 }
 </style>
