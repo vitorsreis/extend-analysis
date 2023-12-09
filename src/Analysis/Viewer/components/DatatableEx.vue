@@ -8,13 +8,6 @@
 </template>
 
 <script>
-export function getlen() {
-  let height = window.innerHeight - 325;
-  let pageLength = Math.floor(height / 25);
-  if (pageLength < 10) pageLength = 10;
-  return pageLength;
-}
-
 export const cursor = {
   current: 0,
   next: 0
@@ -47,11 +40,6 @@ export default {
       type: Boolean,
       default: true,
       required: false
-    },
-    force: {
-      type: Function,
-      default: () => {},
-      required: false
     }
   },
   setup(props) {
@@ -59,7 +47,6 @@ export default {
       responsive: true,
       autoWidth: false,
       paging: true,
-      pageLength: getlen(),
 
       searching: false,
       lengthChange: false,
@@ -90,10 +77,6 @@ export default {
       ...props.options
     }
   },
-  mounted() {
-    window.addEventListener('resize', () => this.resize());
-    this.resize();
-  },
   watch: {
     loading(newValue, oldValue) {
       this.redraw()
@@ -111,10 +94,6 @@ export default {
         this.$props.loading = false;
       }
       this.$refs.dt.dt.draw(false);
-    },
-    resize() {
-      if (!this?.$refs?.dt?.dt) return;
-      this.$refs.dt.dt.page.len(getlen());
     }
   }
 }

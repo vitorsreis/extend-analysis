@@ -42,13 +42,11 @@
       </div>
     </div>
     <div class="row" id="dts">
-      <div class="col-md-4 my-2">
-        <DatatableEx id="dt-keys" ref="dt-keys" :columns="request.dt.keys.columns" :options="request.dt.keys.options"
-                     :force="() => updateData()" @click="request.dt.keys.view"/>
+      <div class="col-md-4 my-2" @click="request.dt.keys.click">
+        <DatatableEx id="dt-keys" ref="dt-keys" :columns="request.dt.keys.columns" :options="request.dt.keys.options"/>
       </div>
-      <div class="col-md-8 my-2">
-        <DatatableEx id="dt-reqs" ref="dt-reqs" :columns="request.dt.reqs.columns" :options="request.dt.reqs.options"
-                     :force="() => updateData()" @click="request.dt.reqs.view"/>
+      <div class="col-md-8 my-2" @click="request.dt.reqs.click">
+        <DatatableEx id="dt-reqs" ref="dt-reqs" :columns="request.dt.reqs.columns" :options="request.dt.reqs.options"/>
       </div>
     </div>
   </div>
@@ -99,7 +97,12 @@ const tolerance = {
     },
   }
 }
-
+export function dtPageLength() {
+  let height = window.innerHeight - 325;
+  let pageLength = Math.floor(height / 25);
+  if (pageLength < 10) pageLength = 10;
+  return pageLength;
+}
 
 export default {
   name: "Dashboard",
@@ -168,6 +171,27 @@ export default {
       return result;
     },
 
+    resize() {
+      let new_len = dtPageLength();
+
+      let old_len_reqs = this.$refs['dt-reqs'].$refs.dt.dt.page.info().length;
+      if (old_len_reqs !== new_len) {
+        console.log('dt-reqs-page-length-change', old_len_reqs, new_len);
+        this.$refs['dt-reqs'].$refs.dt.dt.page.len(new_len);
+        this.$refs['dt-reqs'].$refs.dt.dt.draw(false);
+      }
+
+      let old_len_keys = this.$refs['dt-keys'].$refs.dt.dt.page.info().length;
+      if (old_len_keys !== new_len) {
+        console.log('dt-keys-page-length-change', old_len_keys, new_len);
+        this.$refs['dt-keys'].$refs.dt.dt.page.len(new_len);
+        this.$refs['dt-keys'].$refs.dt.dt.draw(false);
+      }
+
+      if (old_len_reqs !== new_len || old_len_keys !== new_len) {
+        this.updateData();
+      }
+    },
     async updateData() {
       if (this.updateDataTimeout) {
         clearTimeout(this.updateDataTimeout);
@@ -475,10 +499,22 @@ export default {
               }
             ],
             options: {
-              order: [[0, 'desc']]
+              order: [[0, 'desc']],
+              pageLength: dtPageLength()
             },
-            view: (event) => {
+            click: (event) => {
               let request_id = null, target = event.target;
+
+              // Capture change page or change order, and force update data
+              if (target.hasAttribute('data-dt-idx') && !target.hasAttribute('aria-current')) {
+                setTimeout(() => this.updateData(), 10);
+                return;
+              }
+              if (target.nodeName === 'TH' && target.classList.contains('sorting')) {
+                setTimeout(() => this.updateData(), 10);
+                return;
+              }
+
               while (target && target.nodeName !== 'TR') {
                 target = target.parentNode;
               }
@@ -546,10 +582,22 @@ export default {
               }
             ],
             options: {
-              order: [[2, 'desc']]
+              order: [[2, 'desc']],
+              pageLength: dtPageLength()
             },
-            view: (event) => {
+            click: (event) => {
               let request_id = null, target = event.target;
+
+              // Capture change page or change order, and force update data
+              if (target.hasAttribute('data-dt-idx') && !target.hasAttribute('aria-current')) {
+                setTimeout(() => this.updateData(), 10);
+                return;
+              }
+              if (target.nodeName === 'TH' && target.classList.contains('sorting')) {
+                setTimeout(() => this.updateData(), 10);
+                return;
+              }
+
               if (!target.classList.contains('badge')) {
                 return;
               }
@@ -579,6 +627,7 @@ export default {
   },
   mounted() {
     this.updateData();
+    window.addEventListener('resize', () => this.resize());
   }
 }
 </script>
