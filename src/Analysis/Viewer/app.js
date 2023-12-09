@@ -50,7 +50,6 @@ if (url.searchParams.get('d5whub-extend-analysis') === 'request') {
     main = analysis.component('/page/Dashboard.vue');
 }
 
-
 const app = Vue.createApp(main);
 app.use(DataTable);
 app.config.globalProperties.analysis = window.analysis = Vue.reactive(window.analysis);

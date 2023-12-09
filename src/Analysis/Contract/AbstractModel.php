@@ -58,7 +58,7 @@ abstract class AbstractModel
     protected static function hitGroup($group, ...$data)
     {
         $hits = [];
-        $now = date('YmdHis');
+        $now = date('Y-m-d H:i:s');
 
         foreach ($data as $i) {
             if (!$group || $group & static::HIT_NO_GROUP) {
@@ -70,19 +70,44 @@ abstract class AbstractModel
                 ];
             }
             if ($group & static::HIT_SECOND_10) {
-                $hits[] = ['key' => $i['key'], 'type' => 's10', 'ref' => substr($now, 0, -1), 'value' => $i['value']];
+                $hits[] = [
+                    'key' => $i['key'],
+                    'type' => 's10',
+                    'ref' => strtotime(substr($now, 0, -1) . '0'),
+                    'value' => $i['value']
+                ];
             }
             if ($group & static::HIT_MINUTE) {
-                $hits[] = ['key' => $i['key'], 'type' => 'i', 'ref' => substr($now, 0, -2), 'value' => $i['value']];
+                $hits[] = [
+                    'key' => $i['key'],
+                    'type' => 'i',
+                    'ref' => strtotime(substr($now, 0, -2) . '00'),
+                    'value' => $i['value']
+                ];
             }
             if ($group & static::HIT_MINUTE_10) {
-                $hits[] = ['key' => $i['key'], 'type' => 'i10', 'ref' => substr($now, 0, -3), 'value' => $i['value']];
+                $hits[] = [
+                    'key' => $i['key'],
+                    'type' => 'i10',
+                    'ref' => strtotime(substr($now, 0, -4) . '0:00'),
+                    'value' => $i['value']
+                ];
             }
             if ($group & static::HIT_HOUR) {
-                $hits[] = ['key' => $i['key'], 'type' => 'h', 'ref' => substr($now, 0, -4), 'value' => $i['value']];
+                $hits[] = [
+                    'key' => $i['key'],
+                    'type' => 'h',
+                    'ref' => strtotime(substr($now, 0, -5) . ':00:00'),
+                    'value' => $i['value']
+                ];
             }
             if ($group & static::HIT_DAY) {
-                $hits[] = ['key' => $i['key'], 'type' => 'd', 'ref' => substr($now, 0, -6), 'value' => $i['value']];
+                $hits[] = [
+                    'key' => $i['key'],
+                    'type' => 'd',
+                    'ref' => strtotime(substr($now, 0, -8) . '00:00:00'),
+                    'value' => $i['value']
+                ];
             }
         }
 

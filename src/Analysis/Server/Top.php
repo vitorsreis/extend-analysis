@@ -33,15 +33,15 @@ class Top extends AbstractServer
         }
 
         $uptime = 0;
-        isset($matches['up_days']) && $uptime += $matches['up_days'] * 24 * 60;
-        isset($matches['up_hour']) && $uptime += $matches['up_hour'] * 60;
-        isset($matches['up_min']) && $uptime += $matches['up_min'] * 1;
+        isset($matches['up_days']) && $uptime += intval($matches['up_days']) * 24 * 60;
+        isset($matches['up_hour']) && $uptime += intval($matches['up_hour']) * 60;
+        isset($matches['up_min']) && $uptime += intval($matches['up_min']);
 
         $disk_total = (float)number_format(disk_total_space('/') / 1024 / 1024 / 1024, 3, '.', '');
         $disk_free = (float)number_format(disk_free_space('/') / 1024 / 1024 / 1024, 3, '.', '');
         $disk_used = (float)number_format($disk_total - $disk_free, 3, '.', '');
 
-        static::process([
+        return static::process([
             'uptime' => $uptime,
             'cpu' => (float)$matches['cpu'],
             'thr_total' => (int)$matches['thr_total'],

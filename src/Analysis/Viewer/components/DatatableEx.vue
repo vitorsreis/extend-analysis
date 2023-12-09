@@ -8,6 +8,18 @@
 </template>
 
 <script>
+export function getlen() {
+  let height = window.innerHeight - 325;
+  let pageLength = Math.floor(height / 25);
+  if (pageLength < 10) pageLength = 10;
+  return pageLength;
+}
+
+export const cursor = {
+  current: 0,
+  next: 0
+}
+
 export default {
   name: "DatatableEx",
   props: {
@@ -33,13 +45,21 @@ export default {
     },
     loading: {
       type: Boolean,
-      default: false,
+      default: true,
+      required: false
+    },
+    force: {
+      type: Function,
+      default: () => {},
       required: false
     }
   },
   setup(props) {
     props.options = {
       responsive: true,
+      autoWidth: false,
+      paging: true,
+      pageLength: getlen(),
 
       searching: false,
       lengthChange: false,
@@ -48,18 +68,26 @@ export default {
       processing: true,
 
       ajax(request, callback, api) {
-        if (props.loading) {
-          return;
+        if (!props.loading) {
+          cursor.next = request.draw;
+          props.loading = true;
+        } else {
+          if (cursor.current !== request.draw) {
+            cursor.next = request.draw;
+            return;
+          }
         }
 
         callback({
           draw: request.draw,
           recordsTotal: props.draw.recordsTotal || 0,
           recordsFiltered: props.draw.recordsFiltered || 0,
-          data: (props.draw.data || []).slice(0, api._iDisplayLength),
+          data: (props.draw.data || []).slice(0, api?._iDisplayLength || 0),
           error: props.draw.error || false
         });
-      }
+      },
+
+      ...props.options
     }
   },
   mounted() {
@@ -67,7 +95,7 @@ export default {
     this.resize();
   },
   watch: {
-    loading() {
+    loading(newValue, oldValue) {
       this.redraw()
     }
   },
@@ -75,6 +103,7 @@ export default {
   methods: {
     redraw(data = undefined, recordsTotal = undefined, recordsFiltered = undefined, error = false) {
       if (data !== undefined) {
+        cursor.current = cursor.next;
         this.draw.data = data;
         this.draw.recordsTotal = recordsTotal;
         this.draw.recordsFiltered = recordsFiltered;
@@ -85,12 +114,7 @@ export default {
     },
     resize() {
       if (!this?.$refs?.dt?.dt) return;
-
-      let height = window.innerHeight - 325;
-      let pageLength = Math.floor(height / 25);
-      if (pageLength < 10) pageLength = 10;
-
-      this.$refs.dt.dt.page.len(pageLength);
+      this.$refs.dt.dt.page.len(getlen());
     }
   }
 }
@@ -106,11 +130,6 @@ export default {
   flex-direction: column;
   height: 100%;
   justify-content: space-evenly
-}
-
-.datatable .dataTable {
-  height: 100%;
-  margin: 0 !important
 }
 
 .dataTables_wrapper > .dt-row + .row {

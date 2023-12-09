@@ -114,7 +114,7 @@ class PDOSQLite extends AbstractModel
             CREATE TABLE IF NOT EXISTS `hits` (
                 `key` varchar(255) NOT NULL,
                 `type` varchar(255) NOT NULL,
-                `ref` varchar(255) DEFAULT NULL,
+                `ref` integer DEFAULT NULL,
                 `count` bigint DEFAULT NULL,
                 `value` float DEFAULT NULL,
                 `create_at` integer DEFAULT CURRENT_TIMESTAMP,
@@ -170,8 +170,11 @@ class PDOSQLite extends AbstractModel
                 `key` varchar(255) PRIMARY KEY,
                 `avg` float DEFAULT NULL,
                 `min` float DEFAULT NULL,
+                `min_id` integer DEFAULT NULL,
                 `max` float DEFAULT NULL,
+                `max_id` integer DEFAULT NULL,
                 `last` float DEFAULT NULL,
+                `last_id` integer DEFAULT NULL,
                 `hits` bigint DEFAULT NULL,
                 `create_at` integer DEFAULT CURRENT_TIMESTAMP,
                 `update_at` integer DEFAULT CURRENT_TIMESTAMP
@@ -268,8 +271,11 @@ class PDOSQLite extends AbstractModel
                 ON CONFLICT (`key`) DO UPDATE SET
                     `hits` = `hits` + 1,
                     `avg` = ((`avg` * `hits`) + :duration) / (`hits` + 1),
+                    `min_id` = CASE WHEN `min` > :duration THEN :id ELSE `min_id` END,
                     `min` = CASE WHEN `min` > :duration THEN :duration ELSE `min` END,
+                    `max_id` = CASE WHEN `max` < :duration THEN :id ELSE `max_id` END,
                     `max` = CASE WHEN `max` < :duration THEN :duration ELSE `max` END,
+                    `last_id` = :id,
                     `last` = :duration,
                     `update_at` = CURRENT_TIMESTAMP
             ", ...$values);
@@ -278,8 +284,11 @@ class PDOSQLite extends AbstractModel
                 UPDATE `$collection` SET
                     `hits` = `hits` + 1,
                     `avg` = ((`avg` * `hits`) + :duration) / (`hits` + 1),
+                    `min_id` = CASE WHEN `min` > :duration THEN :id ELSE `min_id` END,
                     `min` = CASE WHEN `min` > :duration THEN :duration ELSE `min` END,
+                    `max_id` = CASE WHEN `max` < :duration THEN :id ELSE `max_id` END,
                     `max` = CASE WHEN `max` < :duration THEN :duration ELSE `max` END,
+                    `last_id` = :id,
                     `last` = :duration,
                     `update_at` = CURRENT_TIMESTAMP
                 WHERE
@@ -293,9 +302,9 @@ class PDOSQLite extends AbstractModel
             if ($values) {
                 $this->query("
                     INSERT OR IGNORE INTO `$collection`
-                        (`key`, `hits`, `avg`, `min`, `max`, `last`)
+                        (`key`, `hits`, `avg`, `min`, `min_id`, `max`, `max_id`, `last`, `last_id`)
                     VALUES
-                        (:key, 1, :duration, :duration, :duration, :duration)
+                        (:key, 1, :duration, :duration, :id, :duration, :id, :duration, :id)
                 ", ...$values);
             }
         }
@@ -330,18 +339,20 @@ class PDOSQLite extends AbstractModel
             ['key' => 'req', 'value' => $request['duration']]
         ));
 
-        // Request key duration avg and hits
-        $this->queryAvg(
-            'requests_avg',
-            ['key' => $request['key'], 'duration' => $request['duration']]
-        );
-
         $request['error_count'] = $request['error'] ? count($request['error']) : 0;
         $profile = $request['profile'];
         unset($request['profile']);
 
         $request_id = $this->queryInsert('requests', $request);
+        $request_key = $request['key'];
+        $request_duration = $request['duration'];
         unset($request);
+
+        // Request key duration avg and hits
+        $this->queryAvg(
+            'requests_avg',
+            ['id' => $request_id, 'key' => $request_key, 'duration' => $request_duration]
+        );
 
         foreach ($profile as $index => $item) {
             $profile[$index]['index'] = $index;
@@ -465,9 +476,11 @@ class PDOSQLite extends AbstractModel
         $dtReqsStart = !empty($options['dtReqsStart']) ? $options['dtReqsStart'] : 0;
         $dtReqsLength = !empty($options['dtReqsLength']) ? $options['dtReqsLength'] : 10;
         $dtReqsOrder = !empty($options['dtReqsOrder']) ? $options['dtReqsOrder'] : 'start';
+        $dtReqsDir = !empty($options['dtReqsDir']) ? $options['dtReqsDir'] : 'desc';
         $dtKeysStart = !empty($options['dtKeysStart']) ? $options['dtKeysStart'] : 0;
         $dtKeysLength = !empty($options['dtKeysLength']) ? $options['dtKeysLength'] : 10;
         $dtKeysOrder = !empty($options['dtKeysOrder']) ? $options['dtKeysOrder'] : 'avg';
+        $dtKeysDir = !empty($options['dtKeysDir']) ? $options['dtKeysDir'] : 'desc';
 
         # Get server.current.*, request.current.*
         $this->query("
@@ -506,7 +519,7 @@ class PDOSQLite extends AbstractModel
                 FROM
                     `hits`
                 WHERE
-                    `type` = 's10'
+                    `type` = :type
                 GROUP BY
                     `ref`
                 ORDER BY
@@ -514,11 +527,12 @@ class PDOSQLite extends AbstractModel
                 LIMIT
                     :length
             ", [
+                'type' => $chartGroupBy,
                 'length' => $chartLength
             ]);
             foreach ($this->rows as $i) {
                 foreach (json_decode('[' . $i['json'] . ']', true) as $j) {
-                    !isset($json['server']['chart'][$i['ref']]) && $json['server']['chart'][$i['ref'] ] = [ 'cpu' => 0.0, 'mem_used' => 0.0, 'disk_used' => 0.0 ];
+                    !isset($json['server']['chart'][$i['ref']]) && $json['server']['chart'][$i['ref']] = ['cpu' => 0.0, 'mem_used' => 0.0, 'disk_used' => 0.0];
                     !isset($json['request']['chart'][$i['ref']]) && $json['request']['chart'][$i['ref']] = 0;
 
                     if ($j['key'] === 'req') {
@@ -529,14 +543,17 @@ class PDOSQLite extends AbstractModel
                     $json['server']['chart'][$i['ref']][$j['key']] = round($j['value'] ?: 0, 1);
                 }
             }
+
+            ksort($json['server']['chart']);
+            ksort($json['request']['chart']);
         }
 
         # Get request.dt.reqs.*
         $this->query("
             SELECT
+                `id`,
                 `key`,
                 `start`,
-                `end`,
                 `duration`,
                 `memory`,
                 `profile_count`,
@@ -547,7 +564,7 @@ class PDOSQLite extends AbstractModel
             FROM
                 `requests`
             ORDER BY
-                `$dtReqsOrder` DESC
+                `$dtReqsOrder` $dtReqsDir
             LIMIT
                 :start, :length
         ", [
@@ -556,6 +573,7 @@ class PDOSQLite extends AbstractModel
         ]);
         if ($this->rows) {
             foreach ($this->rows as $i) {
+                $i['start'] = intval($i['start']);
                 $i['duration'] = round($i['duration'], 3);
                 $i['memory'] = round($i['memory'], 3);
                 $i['profile_count'] = round($i['profile_count']);
@@ -581,12 +599,15 @@ class PDOSQLite extends AbstractModel
                 `hits`,
                 `avg`,
                 `min`,
+                `min_id`,
                 `max`,
-                `last`
+                `max_id`,
+                `last`,
+                `last_id`
             FROM
                 `requests_avg`
             ORDER BY
-                `$dtKeysOrder` DESC
+                `$dtKeysOrder` $dtKeysDir
             LIMIT
                 :start, :length
         ", [
@@ -595,10 +616,10 @@ class PDOSQLite extends AbstractModel
         ]);
         if ($this->rows) {
             foreach ($this->rows as $i) {
-                $i['avg'] = round($i['avg'], 3);
-                $i['min'] = round($i['min'], 3);
-                $i['max'] = round($i['max'], 3);
-                $i['last'] = round($i['last'], 3);
+                $i['avg'] = round($i['avg'], 5);
+                $i['min'] = round($i['min'], 5);
+                $i['max'] = round($i['max'], 5);
+                $i['last'] = round($i['last'], 5);
                 $json['request']['dt']['keys']['data'][] = $i;
             }
 
