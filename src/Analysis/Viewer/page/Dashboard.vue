@@ -85,7 +85,7 @@
             <div class="col-sm-8">
               <div class="input-group">
                 <input type="number" min="0" id="input-autoUpdateInterval" class="form-control"
-                       v-model="settings.autoUpdateInterval"/>
+                       v-model="analysis.settings.autoUpdateInterval"/>
                 <span class="input-group-text">ms</span>
               </div>
             </div>
@@ -95,7 +95,8 @@
           <div class="row mb-1">
             <label for="input-chartGroupBy" class="col-form-label col-sm-4">Group by</label>
             <div class="col-sm-8">
-              <select id="input-chartGroupBy" class="form-select" v-model="settings.chart.groupBy" @change="updateData">
+              <select id="input-chartGroupBy" class="form-select" v-model="analysis.settings.chart.groupBy"
+                      @change="updateData">
                 <option value="s10">10 Seconds</option>
                 <option value="i">Minutes</option>
                 <option value="i10">10 Minutes</option>
@@ -108,7 +109,7 @@
             <label for="input-chartLength" class="col-form-label col-sm-4">Length</label>
             <div class="col-sm-8">
               <input type="number" min="10" max="1000" id="input-chartLength" class="form-control"
-                     v-model="settings.chart.length" @change="updateData"/>
+                     v-model="analysis.settings.chart.length" @change="updateData"/>
             </div>
           </div>
 
@@ -121,7 +122,7 @@
                   <div class="input-group">
                     <span class="input-group-text bg-warning">Warning</span>
                     <input type="number" min="0" max="100" id="input-tolerance-server-cpu-warning" class="form-control"
-                           v-model="settings.tolerance.server.cpu.warning"/>
+                           v-model="analysis.settings.tolerance.server.cpu.warning"/>
                     <span class="input-group-text">%</span>
                   </div>
                 </div>
@@ -129,7 +130,7 @@
                   <div class="input-group">
                     <span class="input-group-text bg-danger text-white">Danger</span>
                     <input type="number" min="0" max="100" id="input-tolerance-server-cpu-danger" class="form-control"
-                           v-model="settings.tolerance.server.cpu.danger"/>
+                           v-model="analysis.settings.tolerance.server.cpu.danger"/>
                     <span class="input-group-text">%</span>
                   </div>
                 </div>
@@ -144,7 +145,7 @@
                   <div class="input-group">
                     <span class="input-group-text bg-warning">Warning</span>
                     <input type="number" min="0" max="100" id="input-tolerance-server-disk-warning" class="form-control"
-                           v-model="settings.tolerance.server.disk.warning"/>
+                           v-model="analysis.settings.tolerance.server.disk.warning"/>
                     <span class="input-group-text">%</span>
                   </div>
                 </div>
@@ -152,7 +153,7 @@
                   <div class="input-group">
                     <span class="input-group-text bg-danger text-white">Danger</span>
                     <input type="number" min="0" max="100" id="input-tolerance-server-disk-danger" class="form-control"
-                           v-model="settings.tolerance.server.disk.danger"/>
+                           v-model="analysis.settings.tolerance.server.disk.danger"/>
                     <span class="input-group-text">%</span>
                   </div>
                 </div>
@@ -167,7 +168,7 @@
                   <div class="input-group">
                     <span class="input-group-text bg-warning">Warning</span>
                     <input type="number" min="0" max="100" id="input-tolerance-server-memory-warning"
-                           class="form-control" v-model="settings.tolerance.server.memory.warning"/>
+                           class="form-control" v-model="analysis.settings.tolerance.server.memory.warning"/>
                     <span class="input-group-text">%</span>
                   </div>
                 </div>
@@ -175,7 +176,7 @@
                   <div class="input-group">
                     <span class="input-group-text bg-danger text-white">Danger</span>
                     <input type="number" min="0" max="100" id="input-tolerance-server-memory-danger"
-                           class="form-control" v-model="settings.tolerance.server.memory.danger"/>
+                           class="form-control" v-model="analysis.settings.tolerance.server.memory.danger"/>
                     <span class="input-group-text">%</span>
                   </div>
                 </div>
@@ -190,7 +191,7 @@
                   <div class="input-group">
                     <span class="input-group-text bg-warning">Warning</span>
                     <input type="number" min="0" id="input-tolerance-server-db_size-warning" class="form-control"
-                           v-model="settings.tolerance.server.db_size.warning"/>
+                           v-model="analysis.settings.tolerance.server.db_size.warning"/>
                     <span class="input-group-text">MB</span>
                   </div>
                 </div>
@@ -198,7 +199,7 @@
                   <div class="input-group">
                     <span class="input-group-text bg-danger text-white">Danger</span>
                     <input type="number" min="0" id="input-tolerance-server-db_size-danger" class="form-control"
-                           v-model="settings.tolerance.server.db_size.danger"/>
+                           v-model="analysis.settings.tolerance.server.db_size.danger"/>
                     <span class="input-group-text">MB</span>
                   </div>
                 </div>
@@ -213,7 +214,7 @@
                   <div class="input-group">
                     <span class="input-group-text bg-warning">Warning</span>
                     <input type="number" min="0" id="input-tolerance-request-duration-warning" class="form-control"
-                           v-model="settings.tolerance.request.duration.warning"/>
+                           v-model="analysis.settings.tolerance.request.duration.warning"/>
                     <span class="input-group-text">ms</span>
                   </div>
                 </div>
@@ -221,7 +222,7 @@
                   <div class="input-group">
                     <span class="input-group-text bg-danger text-white">Danger</span>
                     <input type="number" min="0" id="input-tolerance-request-duration-danger" class="form-control"
-                           v-model="settings.tolerance.request.duration.danger"/>
+                           v-model="analysis.settings.tolerance.request.duration.danger"/>
                     <span class="input-group-text">ms</span>
                   </div>
                 </div>
@@ -236,7 +237,7 @@
                   <div class="input-group">
                     <span class="input-group-text bg-warning">Warning</span>
                     <input type="number" min="0" id="input-tolerance-request-memory-warning" class="form-control"
-                           v-model="settings.tolerance.request.memory.warning"/>
+                           v-model="analysis.settings.tolerance.request.memory.warning"/>
                     <span class="input-group-text">MB</span>
                   </div>
                 </div>
@@ -244,7 +245,7 @@
                   <div class="input-group">
                     <span class="input-group-text bg-danger text-white">Danger</span>
                     <input type="number" min="0" id="input-tolerance-request-memory-danger" class="form-control"
-                           v-model="settings.tolerance.request.memory.danger"/>
+                           v-model="analysis.settings.tolerance.request.memory.danger"/>
                     <span class="input-group-text">MB</span>
                   </div>
                 </div>
@@ -260,14 +261,14 @@
                   <div class="input-group">
                     <span class="input-group-text bg-warning">Warning</span>
                     <input type="number" min="0" id="input-tolerance-request-profile_count-warning" class="form-control"
-                           v-model="settings.tolerance.request.profile_count.warning"/>
+                           v-model="analysis.settings.tolerance.request.profile_count.warning"/>
                   </div>
                 </div>
                 <div class="col">
                   <div class="input-group">
                     <span class="input-group-text bg-danger text-white">Danger</span>
                     <input type="number" min="0" id="input-tolerance-request-profile_count-danger" class="form-control"
-                           v-model="settings.tolerance.request.profile_count.danger"/>
+                           v-model="analysis.settings.tolerance.request.profile_count.danger"/>
                   </div>
                 </div>
               </div>
@@ -299,67 +300,6 @@ export default {
     DatatableEx
   },
   methods: {
-    numberFormat(value, decimals = 2) {
-      if (value === undefined || value === null) value = 0;
-      return value
-          .toFixed(decimals)
-          .replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1');
-    },
-    percentFormat(value) {
-      if (value === 0) return '-';
-      return this.numberFormat(value, 1) + '%';
-    },
-    sizeFormat(value, suffix = '') {
-      return this.numberFormat(value, 1) + suffix;
-    },
-    secondFormat(value) {
-      return this.numberFormat(value, 3) + 's';
-    },
-    dateFormat(format, timestamp = 0) {
-      let date = new Date(timestamp * 1000);
-      let d = date.getDate().toString().padStart(2, '0');
-      let m = (date.getMonth() + 1).toString().padStart(2, '0');
-      let Y = date.getFullYear().toString().padStart(4, '0');
-      let H = date.getHours().toString().padStart(2, '0');
-      let i = date.getMinutes().toString().padStart(2, '0');
-      let s = date.getSeconds().toString().padStart(2, '0');
-
-      return format
-          .replace('Y', Y)
-          .replace('m', m)
-          .replace('d', d)
-          .replace('H', H)
-          .replace('i', i)
-          .replace('s', s);
-    },
-    labelFormat(value, groupBy) {
-      switch (groupBy) {
-        case 's10':
-          return this.dateFormat(`H:i:s`, value);
-        case 'i':
-        case 'i10':
-          return this.dateFormat(`H:i`, value);
-        case 'H':
-          return this.dateFormat(`H`, value);
-        case 'd':
-          return this.dateFormat(`d/m`, value);
-        default:
-          return this.dateFormat(`d/m/Y`, value);
-      }
-    },
-    toleranceColors(colors, value) {
-      let result = {bg: 'secondary-subtle', text: 'black'};
-      for (let i in colors) {
-        if (i !== 'default' && value >= colors[i]) {
-          result = i === 'danger'
-              ? {bg: 'danger', text: 'white'}
-              : {bg: 'warning', text: 'black'};
-          break;
-        }
-      }
-      return result;
-    },
-
     resize() {
       let new_len = dtPageLength();
 
@@ -411,8 +351,8 @@ export default {
 
       let start_time = new Date().getTime();
       this.report = await analysis.action('viewer-data', {
-        chartGroupBy: this.settings.chart.groupBy,
-        chartLength: this.settings.chart.length,
+        chartGroupBy: analysis.settings.chart.groupBy,
+        chartLength: analysis.settings.chart.length,
         dtReqsStart: this.$refs['dt-reqs']?.$refs.dt.dt.page.info().start || 0,
         dtReqsLength: this.$refs['dt-reqs']?.$refs.dt.dt.page.info().length || 10,
         dtReqsOrder,
@@ -437,59 +377,14 @@ export default {
       let end_time = new Date().getTime();
 
       this.reportStatus.class = 'success';
-      this.reportStatus.text = ` ${this.secondFormat((end_time - start_time) / 1000)}`;
+      this.reportStatus.text = ` ${analysis.format.second((end_time - start_time) / 1000)}`;
 
-      this.updateDataTimeout = setTimeout(() => this.updateData(), this.settings.autoUpdateInterval);
+      this.updateDataTimeout = setTimeout(() => this.updateData(), analysis.settings.autoUpdateInterval);
     }
   },
   data() {
     return {
       updateDataTimeout: null,
-      settings: {
-        autoUpdateInterval: 1500,
-        chart: {
-          groupBy: 's10',
-          length: 100
-        },
-        tolerance: {
-          server: {
-            cpu: {
-              danger: 80,
-              warning: 60
-            },
-            disk: {
-              danger: 80,
-              warning: 60
-            },
-            memory: {
-              danger: 80,
-              warning: 60
-            },
-            db_size: {
-              danger: 10 * 1024,
-              warning: 5 * 1024
-            }
-          },
-          request: {
-            duration: {
-              danger: 1000,
-              warning: 500
-            },
-            memory: {
-              danger: 30,
-              warning: 10
-            },
-            http_code: {
-              danger: 500,
-              warning: 400
-            },
-            profile_count: {
-              danger: 1000,
-              warning: 500
-            },
-          }
-        }
-      },
       report: {},
       reportStatus: {
         text: '...',
@@ -518,14 +413,14 @@ export default {
       return {
         uptime,
         cpu: {
-          percent: this.percentFormat(cpu_percent),
-          color: this.toleranceColors(this.settings.tolerance.server.cpu, cpu_percent),
+          percent: analysis.format.percent(cpu_percent),
+          color: analysis.format.tolerance(analysis.settings.tolerance.server.cpu, cpu_percent),
           chart: {
             data: {
               labels: ['Free', 'Usage'],
               datasets: [
                 {
-                  data: [this.numberFormat(100 - parseFloat(cpu_percent), 1), this.numberFormat(cpu_percent, 1)],
+                  data: [analysis.format.number(100 - parseFloat(cpu_percent), 1), analysis.format.number(cpu_percent, 1)],
                   backgroundColor: ['rgb(25,135,84)', 'rgba(220,53,69,1)']
                 }
               ]
@@ -540,17 +435,17 @@ export default {
           }
         },
         disk: {
-          percent: this.percentFormat(disk_percent),
-          color: this.toleranceColors(this.settings.tolerance.server.disk, disk_percent),
-          free: this.sizeFormat(this.report.server?.current.disk_free),
-          used: this.sizeFormat(this.report.server?.current.disk_used),
-          total: this.sizeFormat(this.report.server?.current.disk_total, ' GB'),
+          percent: analysis.format.percent(disk_percent),
+          color: analysis.format.tolerance(analysis.settings.tolerance.server.disk, disk_percent),
+          free: analysis.format.size(this.report.server?.current.disk_free),
+          used: analysis.format.size(this.report.server?.current.disk_used),
+          total: analysis.format.size(this.report.server?.current.disk_total, ' GB'),
           chart: {
             data: {
               labels: ['Free', 'Usage'],
               datasets: [
                 {
-                  data: [this.numberFormat(100 - disk_percent, 1), this.numberFormat(disk_percent, 1)],
+                  data: [analysis.format.number(100 - disk_percent, 1), analysis.format.number(disk_percent, 1)],
                   backgroundColor: ['rgb(25,135,84)', 'rgba(220,53,69,1)']
                 }
               ]
@@ -565,18 +460,18 @@ export default {
           }
         },
         memory: {
-          percent: this.percentFormat(memory_percent),
-          color: this.toleranceColors(this.settings.tolerance.server.memory, memory_percent),
-          free: this.sizeFormat(this.report.server?.current.mem_free),
-          used: this.sizeFormat(this.report.server?.current.mem_used),
-          total: this.sizeFormat(this.report.server?.current.mem_total, ' MB'),
-          cache: this.sizeFormat(this.report.server?.current.mem_cache),
+          percent: analysis.format.percent(memory_percent),
+          color: analysis.format.tolerance(analysis.settings.tolerance.server.memory, memory_percent),
+          free: analysis.format.size(this.report.server?.current.mem_free),
+          used: analysis.format.size(this.report.server?.current.mem_used),
+          total: analysis.format.size(this.report.server?.current.mem_total, ' MB'),
+          cache: analysis.format.size(this.report.server?.current.mem_cache),
           chart: {
             data: {
               labels: ['Free', 'Usage'],
               datasets: [
                 {
-                  data: [this.numberFormat(100 - memory_percent, 1), this.numberFormat(memory_percent, 1)],
+                  data: [analysis.format.number(100 - memory_percent, 1), analysis.format.number(memory_percent, 1)],
                   backgroundColor: ['rgb(25,135,84)', 'rgba(220,53,69,1)']
                 }
               ]
@@ -591,11 +486,11 @@ export default {
           }
         },
         swap: {
-          percent: this.percentFormat(this.report.server?.current.swa_used * 100 / this.report.server?.current.swa_total),
-          free: this.sizeFormat(this.report.server?.current.swa_free),
-          used: this.sizeFormat(this.report.server?.current.swa_used),
-          total: this.sizeFormat(this.report.server?.current.swa_total, ' MB'),
-          cache: this.sizeFormat(this.report.server?.current.swa_cache)
+          percent: analysis.format.percent(this.report.server?.current.swa_used * 100 / this.report.server?.current.swa_total),
+          free: analysis.format.size(this.report.server?.current.swa_free),
+          used: analysis.format.size(this.report.server?.current.swa_used),
+          total: analysis.format.size(this.report.server?.current.swa_total, ' MB'),
+          cache: analysis.format.size(this.report.server?.current.swa_cache)
         },
         thread: {
           total: this.report.server?.current.thr_total,
@@ -605,29 +500,29 @@ export default {
           zombie: this.report.server?.current.thr_zombie
         },
 
-        db_size: this.sizeFormat(this.report.server?.current?.db_size || 0, ' MB'),
-        db_size_color: this.toleranceColors(this.settings.tolerance.server.db_size, this.report.server?.current?.db_size || 0),
+        db_size: analysis.format.size(this.report.server?.current?.db_size || 0, ' MB'),
+        db_size_color: analysis.format.tolerance(analysis.settings.tolerance.server.db_size, this.report.server?.current?.db_size || 0),
 
         chart: {
           data: {
-            labels: Object.keys(this.report.server?.chart || {}).map(i => this.labelFormat(i, this.settings.chart.groupBy)),
+            labels: Object.keys(this.report.server?.chart || {}).map(i => analysis.format.label(i, analysis.settings.chart.groupBy)),
             datasets: [{
               label: 'CPU',
-              data: Object.values(this.report.server?.chart || {}).map(i => this.numberFormat(i.cpu, 1)),
+              data: Object.values(this.report.server?.chart || {}).map(i => analysis.format.number(i.cpu, 1)),
               borderWidth: 1,
               pointRadius: 1,
               backgroundColor: 'rgb(220,53,69)',
               borderColor: 'rgb(220,53,69)'
             }, {
               label: 'Memory',
-              data: Object.values(this.report.server?.chart || {}).map(i => this.numberFormat(i.mem_used * 100 / this.report.server?.current.mem_total, 1)),
+              data: Object.values(this.report.server?.chart || {}).map(i => analysis.format.number(i.mem_used * 100 / this.report.server?.current.mem_total, 1)),
               borderWidth: 1,
               pointRadius: 1,
               backgroundColor: 'rgb(13,110,253)',
               borderColor: 'rgb(13,110,253)'
             }, {
               label: 'Disk',
-              data: Object.values(this.report.server?.chart || {}).map(i => this.numberFormat(i.disk_used * 100 / this.report.server?.current.disk_total, 1)),
+              data: Object.values(this.report.server?.chart || {}).map(i => analysis.format.number(i.disk_used * 100 / this.report.server?.current.disk_total, 1)),
               borderWidth: 1,
               pointRadius: 1,
               backgroundColor: 'rgb(108,117,125)',
@@ -647,20 +542,20 @@ export default {
     },
     request() {
       return {
-        avg: this.secondFormat(this.report.request?.current.avg),
-        color: this.toleranceColors(this.settings.tolerance.request.duration, this.report.request?.current.avg * 1000),
-        total: this.numberFormat(this.report.request?.current.total, 0),
-        per_second: this.numberFormat(this.report.request?.current.per.second, 0),
-        per_minute: this.numberFormat(this.report.request?.current.per.minute, 0),
-        per_hour: this.numberFormat(this.report.request?.current.per.hour, 0),
-        per_day: this.numberFormat(this.report.request?.current.per.day, 0),
+        avg: analysis.format.second(this.report.request?.current.avg),
+        color: analysis.format.tolerance(analysis.settings.tolerance.request.duration, this.report.request?.current.avg * 1000),
+        total: analysis.format.number(this.report.request?.current.total, 0),
+        per_second: analysis.format.number(this.report.request?.current.per.second, 0),
+        per_minute: analysis.format.number(this.report.request?.current.per.minute, 0),
+        per_hour: analysis.format.number(this.report.request?.current.per.hour, 0),
+        per_day: analysis.format.number(this.report.request?.current.per.day, 0),
 
         chart: {
           data: {
-            labels: Object.keys(this.report.request?.chart || {}).map(i => this.labelFormat(i, this.settings.chart.groupBy)),
+            labels: Object.keys(this.report.request?.chart || {}).map(i => analysis.format.label(i, analysis.settings.chart.groupBy)),
             datasets: [{
               label: 'Requests',
-              data: Object.values(this.report.request?.chart || {}).map(i => this.numberFormat(i, 0)),
+              data: Object.values(this.report.request?.chart || {}).map(i => analysis.format.number(i, 0)),
               borderWidth: 1,
               pointRadius: 1,
               backgroundColor: 'rgb(13,110,253)',
@@ -684,7 +579,7 @@ export default {
                 title: "Date",
                 className: 'text-center',
                 render: (data) => {
-                  return this.dateFormat('Y-m-d H:i:s', data);
+                  return analysis.format.date('Y-m-d H:i:s', data);
                 }
               },
               {
@@ -692,8 +587,8 @@ export default {
                 title: "Duration",
                 className: 'text-center',
                 render: (data) => {
-                  let color = this.toleranceColors(this.settings.tolerance.request.duration, data * 1000);
-                  return `<span class="badge bg-${color.bg} text-${color.text}">${this.secondFormat(data)}</span>`;
+                  let color = analysis.format.tolerance(analysis.settings.tolerance.request.duration, data * 1000);
+                  return `<span class="badge bg-${color.bg} text-${color.text}">${analysis.format.second(data)}</span>`;
                 }
               },
               {
@@ -701,8 +596,8 @@ export default {
                 title: "Memory",
                 className: 'text-center',
                 render: (data) => {
-                  let color = this.toleranceColors(this.settings.tolerance.request.memory, data);
-                  return `<span class="badge bg-${color.bg} text-${color.text}">${this.sizeFormat(data, 'MB')}</span>`;
+                  let color = analysis.format.tolerance(analysis.settings.tolerance.request.memory, data);
+                  return `<span class="badge bg-${color.bg} text-${color.text}">${analysis.format.size(data, 'MB')}</span>`;
                 }
               },
               {
@@ -710,8 +605,8 @@ export default {
                 title: "Count",
                 className: 'text-center',
                 render: (data) => {
-                  let color = this.toleranceColors(this.settings.tolerance.request.profile_count, data);
-                  return `<span class="badge bg-${color.bg} text-${color.text}">${this.numberFormat(data, 0)}</span>`;
+                  let color = analysis.format.tolerance(analysis.settings.tolerance.request.profile_count, data);
+                  return `<span class="badge bg-${color.bg} text-${color.text}">${analysis.format.number(data, 0)}</span>`;
                 }
               },
               {
@@ -719,7 +614,7 @@ export default {
                 title: "Code",
                 className: 'text-center',
                 render: (data) => {
-                  let color = this.toleranceColors(this.settings.tolerance.request.http_code, data);
+                  let color = analysis.format.tolerance(analysis.settings.tolerance.request.http_code, data);
                   return `<span class="badge bg-${color.bg} text-${color.text}">${data}</span>`;
                 }
               },
@@ -783,7 +678,7 @@ export default {
                 title: "Hits",
                 className: 'text-center',
                 render: (data) => {
-                  return this.numberFormat(data, 0);
+                  return analysis.format.number(data, 0);
                 }
               },
               {
@@ -791,8 +686,8 @@ export default {
                 title: "Avg",
                 className: 'text-center',
                 render: (data) => {
-                  let color = this.toleranceColors(this.settings.tolerance.request.duration, data * 1000);
-                  return `<span class="badge bg-${color.bg} text-${color.text}">${this.secondFormat(data)}</span>`;
+                  let color = analysis.format.tolerance(analysis.settings.tolerance.request.duration, data * 1000);
+                  return `<span class="badge bg-${color.bg} text-${color.text}">${analysis.format.second(data)}</span>`;
                 }
               },
               {
@@ -800,8 +695,8 @@ export default {
                 title: "Min",
                 className: 'text-center min',
                 render: (data) => {
-                  let color = this.toleranceColors(this.settings.tolerance.request.duration, data * 1000);
-                  return `<span class="badge bg-${color.bg} text-${color.text}">${this.secondFormat(data)}</span>`;
+                  let color = analysis.format.tolerance(analysis.settings.tolerance.request.duration, data * 1000);
+                  return `<span class="badge bg-${color.bg} text-${color.text}">${analysis.format.second(data)}</span>`;
                 }
               },
               {
@@ -809,8 +704,8 @@ export default {
                 title: "Max",
                 className: 'text-center max',
                 render: (data) => {
-                  let color = this.toleranceColors(this.settings.tolerance.request.duration, data * 1000);
-                  return `<span class="badge bg-${color.bg} text-${color.text}">${this.secondFormat(data)}</span>`;
+                  let color = analysis.format.tolerance(analysis.settings.tolerance.request.duration, data * 1000);
+                  return `<span class="badge bg-${color.bg} text-${color.text}">${analysis.format.second(data)}</span>`;
                 }
               },
               {
@@ -819,8 +714,8 @@ export default {
                 className: 'text-center last',
                 orderable: false,
                 render: (data) => {
-                  let color = this.toleranceColors(this.settings.tolerance.request.duration, data * 1000);
-                  return `<span class="badge bg-${color.bg} text-${color.text}">${this.secondFormat(data)}</span>`;
+                  let color = analysis.format.tolerance(analysis.settings.tolerance.request.duration, data * 1000);
+                  return `<span class="badge bg-${color.bg} text-${color.text}">${analysis.format.second(data)}</span>`;
                 }
               }
             ],
@@ -871,10 +766,8 @@ export default {
   mounted() {
     this.updateData();
     window.addEventListener('resize', () => this.resize());
-
-    this.settings = {...this.settings, ...JSON.parse(localStorage.getItem('analysis.settings') || "{}")};
     for (let i of document.querySelectorAll('#settings input, #settings select')) {
-      i.addEventListener('change', () => localStorage.setItem('analysis.settings', JSON.stringify(this.settings)));
+      i.addEventListener('change', analysis.saveSettings);
     }
   }
 }

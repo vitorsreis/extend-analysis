@@ -40,6 +40,119 @@ window.analysis = {
                 document.head.insertBefore(style, ref);
             },
         }));
+    },
+
+    settings: {
+        autoUpdateInterval: 1500,
+        chart: {
+            groupBy: 's10',
+            length: 100
+        },
+        tolerance: {
+            server: {
+                cpu: {
+                    danger: 80,
+                    warning: 60
+                },
+                disk: {
+                    danger: 80,
+                    warning: 60
+                },
+                memory: {
+                    danger: 80,
+                    warning: 60
+                },
+                db_size: {
+                    danger: 10 * 1024,
+                    warning: 5 * 1024
+                }
+            },
+            request: {
+                duration: {
+                    danger: 1000,
+                    warning: 500
+                },
+                memory: {
+                    danger: 30,
+                    warning: 10
+                },
+                http_code: {
+                    danger: 500,
+                    warning: 400
+                },
+                profile_count: {
+                    danger: 1000,
+                    warning: 500
+                },
+            }
+        },
+        ...JSON.parse(localStorage.getItem('analysis.settings') || "{}")
+    },
+    saveSettings() {
+        localStorage.setItem('analysis.settings', JSON.stringify(analysis.settings));
+    },
+    
+    format: {
+        number(value, decimals = 2) {
+            if (value === undefined || value === null) value = 0;
+            return value
+                .toFixed(decimals)
+                .replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1');
+        },
+        percent(value) {
+            if (!value || value <= 0) return '-';
+            return analysis.format.number(value, 1) + '%';
+        },
+        size(value, suffix = '') {
+            return analysis.format.number(value, 1) + suffix;
+        },
+        second(value) {
+            return analysis.format.number(value, 3) + 's';
+        },
+        date(format, timestamp = 0) {
+            let date = new Date(timestamp * 1000);
+            let d = date.getDate().toString().padStart(2, '0');
+            let m = (date.getMonth() + 1).toString().padStart(2, '0');
+            let Y = date.getFullYear().toString().padStart(4, '0');
+            let H = date.getHours().toString().padStart(2, '0');
+            let i = date.getMinutes().toString().padStart(2, '0');
+            let s = date.getSeconds().toString().padStart(2, '0');
+
+            return format
+                .replace('Y', Y)
+                .replace('m', m)
+                .replace('d', d)
+                .replace('H', H)
+                .replace('i', i)
+                .replace('s', s);
+        },
+        label(value, groupBy) {
+            switch (groupBy) {
+                case 's10':
+                    return analysis.format.date(`H:i:s`, value);
+                case 'i':
+                case 'i10':
+                    return analysis.format.date(`H:i`, value);
+                case 'H':
+                    return analysis.format.date(`H`, value);
+                case 'd':
+                    return analysis.format.date(`d/m`, value);
+                default:
+                    return analysis.format.date(`d/m/Y`, value);
+            }
+        },
+        tolerance(colors, value) {
+            let result = {bg: 'secondary-subtle', text: 'black'};
+            for (let i in colors) {
+                if (i !== 'default' && value >= colors[i]) {
+                    result = i === 'danger'
+                        ? {bg: 'danger', text: 'white'}
+                        : {bg: 'warning', text: 'black'};
+                    break;
+                }
+            }
+            return result;
+        },
     }
 };
 

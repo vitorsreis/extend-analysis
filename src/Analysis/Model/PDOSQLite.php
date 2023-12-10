@@ -528,7 +528,7 @@ class PDOSQLite extends AbstractModel
         ");
         foreach ($this->rows as $i) {
             if ($i['key'] === 'req') {
-                $time = strtotime($i['update_at']) - strtotime($i['create_at']);
+                $time = strtotime($i['update_at']) - strtotime($i['create_at']) ?: 1;
                 $json['request']['current']['avg'] = round($i['value'], 3);
                 $json['request']['current']['total'] = $i['count'];
                 $json['request']['current']['per']['second'] = ceil($i['count'] / $time);

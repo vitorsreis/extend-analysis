@@ -87,6 +87,11 @@ class Request
         $this->profile[$index]['extra'] = $extra;
         $this->profile[$index]['end'] = $end = microtime(true);
         $this->profile[$index]['duration'] = $end - $this->profile[$index]['start'];
+
+        if (!$this->parent_id) {
+            $this->parent_id[] = $index; # Prevent empty
+        }
+
         return $this;
     }
 
@@ -147,9 +152,10 @@ class Request
     public function save()
     {
         # Stop all
-        while ($this->parent_id) {
+        while (count($this->parent_id) > 1) {
             $this->stop();
         }
+        $this->stop();
 
         $request = [
             'key' => $this->key,

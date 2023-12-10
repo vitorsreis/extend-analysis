@@ -14,48 +14,22 @@ echo "Start add 1000 requests:" . PHP_EOL;
 $start = microtime(true);
 $avgCount = 0;
 $avgTime = 0;
-for ($i = 0; $i < 100000; $i++) {
+for ($i = 0; $i < 1000; $i++) {
     $request = new Analysis\Request("test-" . ($i % 25), false);
     $_SERVER['REQUEST_METHOD'] = $i % 2 ? 'GET' : 'POST';
     $_SERVER['REQUEST_URI'] = '/test-' . ($i % 25);
 
-    usleep(100000 * (rand(0, 15) % 15));
-
     # Example of use
-    $request->start('aaa');
-    $request->stop();
-
-    $request->start('bbb');
-    $request->stop();
-
-    # Example of use multi level
-    $request->start("bbb-lvl-1");
-    $request->start("bbb-lvl-2");
-    $request->start("bbb-lvl-3");
-    $request->start("bbb-lvl-4");
-    $request->start("bbb-lvl-5");
-    if (rand(0, 10) === 5) {
-        $request->error(new Exception("Error test", 1));
-    }
-    $request->stop(); // bbb-lvl-5
-    $request->stop(); // bbb-lvl-4
-    $request->stop(); // bbb-lvl-3
-    $request->stop(); // bbb-lvl-2
-    $request->stop(); // bbb-lvl-1
-
-    $request->start("ccc-lvl-1");
-    $request->start("ccc-lvl-2");
-    $request->start("ccc-lvl-3");
-    $request->start("ccc-lvl-4");
-    $request->start("ccc-lvl-5");
-    $request->stop(); // ccc-lvl-5
-    $request->stop(); // ccc-lvl-4
-    $request->stop(); // ccc-lvl-3
-    $request->stop(); // ccc-lvl-2
-    $request->stop(); // ccc-lvl-1
-
     for ($j = 1; $j <= 100 * ($i % 10); $j++) {
-        $request->start("ddd-lvl-$j");
+        $request->start('aaa');
+        $request->stop();
+
+        $request->start('bbb');
+        $request->start('ccc-1');
+        $request->stop();
+        $request->start('ccc-2');
+        $request->stop();
+        $request->stop();
     }
 
     $start_save_avg = microtime(true);
