@@ -50,6 +50,12 @@ abstract class AbstractModel
 
     abstract public function processServer($data);
 
+    abstract public function getDatabaseSize();
+
+    abstract public function getViewerData($options);
+
+    abstract public function getRequestData($id);
+
     /**
      * @param int $group
      * @param array{id:string, value:mixed} ...$data

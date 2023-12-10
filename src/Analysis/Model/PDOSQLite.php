@@ -19,6 +19,8 @@ class PDOSQLite extends AbstractModel
      */
     protected $instance;
 
+    protected $filepath;
+
     protected $lastId = false;
 
     protected $affected = [];
@@ -28,15 +30,16 @@ class PDOSQLite extends AbstractModel
     protected $onConflictSupport = false;
 
     /**
-     * @param string $database File path
+     * @param string $filename File path
      */
-    public function __construct($database)
+    public function __construct($filename)
     {
         if (extension_loaded('pdo_sqlite') === false) {
             throw new RuntimeException('PDO SQLite extension is not loaded');
         }
 
-        $this->instance = new PDO("sqlite:$database");
+        $this->filepath = $filename;
+        $this->instance = new PDO("sqlite:$filename");
         $this->onConflictSupport = version_compare(
             $this->instance->query('select sqlite_version()')->fetch()[0],
             '3.24.0',
@@ -188,7 +191,7 @@ class PDOSQLite extends AbstractModel
         $this->query("
             CREATE TABLE IF NOT EXISTS `profiles` (
                 `key` varchar(255) NOT NULL,
-                `request_id` integer,
+                `id` integer,
                 `index` integer,
                 `parent_id` integer,
                 `start` float NOT NULL,
@@ -198,7 +201,7 @@ class PDOSQLite extends AbstractModel
                 `memory_peak` bigint DEFAULT NULL,
                 `error` json DEFAULT NULL,
                 `extra` json DEFAULT NULL,
-                PRIMARY KEY (`request_id`,`index`,`parent_id`)
+                PRIMARY KEY (`id`,`index`,`parent_id`)
             )
         ");
         // $this->query("
@@ -349,7 +352,7 @@ class PDOSQLite extends AbstractModel
         $profile = $request['profile'];
         unset($request['profile']);
 
-        $request_id = $this->queryInsert('requests', $request);
+        $id = $this->queryInsert('requests', $request);
         $request_key = $request['key'];
         $request_duration = $request['duration'];
         unset($request);
@@ -357,12 +360,12 @@ class PDOSQLite extends AbstractModel
         // Request key duration avg and hits
         $this->queryAvg(
             'requests_avg',
-            ['id' => $request_id, 'key' => $request_key, 'duration' => $request_duration]
+            ['id' => $id, 'key' => $request_key, 'duration' => $request_duration]
         );
 
         foreach ($profile as $index => $item) {
             $profile[$index]['index'] = $index;
-            $profile[$index]['request_id'] = $request_id;
+            $profile[$index]['id'] = $id;
             $profile[$index]['extra'] = $profile[$index]['extra']
                 ? (json_encode($profile[$index]['extra'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: null)
                 : null;
@@ -415,6 +418,11 @@ class PDOSQLite extends AbstractModel
         unset($data);
     }
 
+    public function getDatabaseSize()
+    {
+        return filesize($this->filepath) / 1024 / 1024;
+    }
+
     public function getViewerData($options)
     {
         $json = [
@@ -438,6 +446,7 @@ class PDOSQLite extends AbstractModel
                     'disk_total' => 0.0,
                     'disk_free' => 0.0,
                     'disk_used' => 0.0,
+                    'db_size' => $this->getDatabaseSize()
                 ],
                 'chart' => [
                     # '00:00' => ['cpu' => 0.0, 'mem' => 0.0, 'swa' => 0.0, 'disk' => 0.0]
@@ -497,7 +506,6 @@ class PDOSQLite extends AbstractModel
 
         $chartGroupBy = !empty($options['chartGroupBy']) ? $options['chartGroupBy'] : null;
         $chartLength = !empty($options['chartLength']) ? $options['chartLength'] : 100;
-
         $dtReqsStart = !empty($options['dtReqsStart']) ? $options['dtReqsStart'] : 0;
         $dtReqsLength = !empty($options['dtReqsLength']) ? $options['dtReqsLength'] : 10;
         $dtReqsOrder = !empty($options['dtReqsOrder']) ? $options['dtReqsOrder'] : 'start';
@@ -604,9 +612,9 @@ class PDOSQLite extends AbstractModel
                 $i['start'] = intval($i['start']);
                 $i['duration'] = round($i['duration'], 3);
                 $i['memory'] = round($i['memory'], 3);
-                $i['profile_count'] = round($i['profile_count']);
+                $i['profile_count'] = intval($i['profile_count']);
                 $i['http_code'] = intval($i['http_code']);
-                $i['error_count'] = round($i['error_count']);
+                $i['error_count'] = intval($i['error_count']);
                 $json['request']['dt']['reqs']['data'][] = $i;
             }
 
@@ -660,6 +668,99 @@ class PDOSQLite extends AbstractModel
             $json['request']['dt']['keys']['recordsTotal'] = $this->rows[0]['count'];
             $json['request']['dt']['keys']['recordsFiltered'] = $this->rows[0]['count'];
         }
+        return $json;
+    }
+
+    public function getRequestData($id)
+    {
+        if (!$id) {
+            return false;
+        }
+
+        $this->query("
+            SELECT
+                *
+            FROM
+                `requests`
+            WHERE
+                `id` = :id
+        ", [
+            'id' => $id
+        ]);
+        if (!$this->rows) {
+            return false;
+        }
+
+        $json = $this->rows[0];
+        $json['duration'] = round($json['duration'], 3);
+        $json['http_code'] = intval($json['http_code']);
+        $json['get'] = $json['get'] ? json_decode($json['get'], true) : null;
+        $json['post'] = $json['post'] ? json_decode($json['post'], true) : null;
+        $json['raw_post'] = $json['raw_post'] ?: null;
+        $json['files'] = $json['files'] ? json_decode($json['files'], true) : null;
+        $json['cookies'] = $json['cookies'] ? json_decode($json['cookies'], true) : null;
+        $json['server'] = $json['server'] ? json_decode($json['server'], true) : null;
+        $json['headers'] = $json['headers'] ? json_decode($json['headers'], true) : null;
+        $json['inc_files'] = $json['inc_files'] ? json_decode($json['inc_files'], true) : null;
+        $json['memory'] = round($json['memory'], 3);
+        $json['memory_peak'] = round($json['memory_peak'], 3);
+        $json['error'] = $json['error'] ? json_decode($json['error'], true) : null;
+        $json['error_count'] = intval($json['error_count']);
+        $json['extra'] = $json['extra'] ? json_decode($json['extra'], true) : null;
+        $json['profile_count'] = intval($json['profile_count']);
+        $json['profile'] = [];
+
+        $this->query("
+            SELECT
+                `key`,
+                `index`,
+                `parent_id`,
+                `start`,
+                `end`,
+                `duration`,
+                `memory`,
+                `memory_peak`,
+                `error`,
+                `extra`
+            FROM
+                `profiles`
+            WHERE
+                `id` = :id
+            ORDER BY
+                `index` ASC
+        ", [
+            'id' => $id
+        ]);
+        if ($this->rows) {
+            foreach ($this->rows as $i) {
+                $i['duration'] = round($i['duration'], 3);
+                $i['memory'] = $i['memory'] ? round($i['memory'], 3) : null;
+                $i['memory_peak'] = $i['memory_peak'] ? round($i['memory_peak'], 3) : null;
+                $i['error'] = $i['error'] ? json_decode($i['error'], true) : null;
+                $i['extra'] = $i['extra'] ? json_decode($i['extra'], true) : null;
+                $json['profile'][] = $i;
+            }
+        }
+
+        $json['key_info'] = [];
+        $this->query("
+            SELECT
+                *
+            FROM
+                `requests_avg`
+            WHERE
+                `key` = :key
+        ", [
+            'key' => $json['key']
+        ]);
+        if ($this->rows) {
+            $json['key_info'] = $this->rows[0];
+            $json['key_info']['avg'] = round($json['key_info']['avg'], 5);
+            $json['key_info']['min'] = round($json['key_info']['min'], 5);
+            $json['key_info']['max'] = round($json['key_info']['max'], 5);
+            $json['key_info']['last'] = round($json['key_info']['last'], 5);
+        }
+
         return $json;
     }
 }

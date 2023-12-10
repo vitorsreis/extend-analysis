@@ -36,6 +36,21 @@ class Viewer
         }
     }
 
+    private static function cache($hash)
+    {
+        $etag = "W/\"$hash\"";
+
+        # Cache
+        $cache = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? $_SERVER['HTTP_IF_NONE_MATCH'] : '';
+        if ($cache === $etag) {
+            http_response_code(304);
+            exit;
+        }
+
+        header("ETag: $etag");
+        # header('Cache-Control: public, max-age=31536000');
+    }
+
     private static function gzip($data)
     {
         if (!function_exists('gzencode')) {
@@ -50,6 +65,17 @@ class Viewer
         header('Content-Encoding: gzip');
         header('Content-Length: ' . strlen($data));
         return $data;
+    }
+
+    private static function outputJson($data)
+    {
+        $data = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        static::cache(md5($data));
+
+        header('Content-Type: application/json; charset=utf-8');
+        header('Content-Length: ' . strlen($data));
+        echo static::gzip($data);
+        exit;
     }
 
     private static function outputFile($file)
@@ -67,14 +93,7 @@ class Viewer
             exit;
         }
 
-        $etag = "W/\"" . md5_file($file) . "\"";
-
-        # Cache
-        $cache = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? $_SERVER['HTTP_IF_NONE_MATCH'] : '';
-        if ($cache === $etag) {
-            http_response_code(304);
-            exit;
-        }
+        static::cache(md5_file($file));
 
         $mimeType = [
             'html' => 'text/html',
@@ -87,26 +106,21 @@ class Viewer
 
         header("Content-Type: $mimeType; charset=utf-8");
         header('Content-Length: ' . strlen($content));
-        header('ETag: ' . $etag);
-        # header('Cache-Control: public, max-age=31536000');
         echo static::gzip($content);
         exit;
     }
 
     private static function outputViewerData()
     {
-        $data = json_encode(
-            Analysis::getModel()->getViewerData($_REQUEST),
-            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-        );
-
-        header('Content-Type: application/json; charset=utf-8');
-        header('Content-Length: ' . strlen($data));
-        echo static::gzip($data);
+        static::outputJson(Analysis::getModel()->getViewerData($_REQUEST));
         exit;
     }
 
     private static function outputRequestData()
     {
+        static::outputJson(Analysis::getModel()->getRequestData(
+            isset($_REQUEST['id']) ? $_REQUEST['id'] : false
+        ));
+        exit;
     }
 }

@@ -48,6 +48,9 @@
               hits: {{ request.total }} ({{ request.per_second }}/s, {{ request.per_minute }}/m,
               {{ request.per_hour }}/h, {{ request.per_day }}/d)
             </span>
+            <span class="badge text-danger-emphasis">
+              DB Size: <span :class="'text-'+server?.db_size_color.bg">{{ server?.db_size }}</span>
+            </span>
           </div>
         </div>
       </div>
@@ -174,6 +177,29 @@
                     <input type="number" min="0" max="100" id="input-tolerance-server-memory-danger"
                            class="form-control" v-model="settings.tolerance.server.memory.danger"/>
                     <span class="input-group-text">%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row mb-1">
+            <label for="input-tolerance-server-db_size" class="col-form-label col-sm-4">DB Size</label>
+            <div class="col-sm-8">
+              <div class="row g-3">
+                <div class="col">
+                  <div class="input-group">
+                    <span class="input-group-text bg-warning">Warning</span>
+                    <input type="number" min="0" id="input-tolerance-server-db_size-warning" class="form-control"
+                           v-model="settings.tolerance.server.db_size.warning"/>
+                    <span class="input-group-text">MB</span>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="input-group">
+                    <span class="input-group-text bg-danger text-white">Danger</span>
+                    <input type="number" min="0" id="input-tolerance-server-db_size-danger" class="form-control"
+                           v-model="settings.tolerance.server.db_size.danger"/>
+                    <span class="input-group-text">MB</span>
                   </div>
                 </div>
               </div>
@@ -438,6 +464,10 @@ export default {
             memory: {
               danger: 80,
               warning: 60
+            },
+            db_size: {
+              danger: 10 * 1024,
+              warning: 5 * 1024
             }
           },
           request: {
@@ -574,6 +604,9 @@ export default {
           stopped: this.report.server?.current.thr_stopped,
           zombie: this.report.server?.current.thr_zombie
         },
+
+        db_size: this.sizeFormat(this.report.server?.current?.db_size || 0, ' MB'),
+        db_size_color: this.toleranceColors(this.settings.tolerance.server.db_size, this.report.server?.current?.db_size || 0),
 
         chart: {
           data: {
@@ -713,7 +746,7 @@ export default {
               pageLength: dtPageLength()
             },
             click: (event) => {
-              let request_id = null, target = event.target;
+              let id = null, target = event.target;
 
               // Capture change page or change order, and force update data
               if (target.hasAttribute('data-dt-idx') && !target.hasAttribute('aria-current')) {
@@ -732,8 +765,8 @@ export default {
                 return;
               }
 
-              request_id = this.$refs['dt-reqs'].$refs.dt.dt.row(target).data()?.id;
-              request_id && window.open(analysis.geturl('request', {request_id}), '_blank');
+              id = this.$refs['dt-reqs'].$refs.dt.dt.row(target).data()?.id;
+              id && window.open(analysis.geturl('request', {id}), '_blank');
             }
           },
           keys: {
@@ -796,7 +829,7 @@ export default {
               pageLength: dtPageLength()
             },
             click: (event) => {
-              let request_id = null, target = event.target;
+              let id = null, target = event.target;
 
               // Capture change page or change order, and force update data
               if (target.hasAttribute('data-dt-idx') && !target.hasAttribute('aria-current')) {
@@ -821,14 +854,14 @@ export default {
 
               let row = this.$refs['dt-keys'].$refs.dt.dt.row(target).data();
               if (target.classList.contains('min')) {
-                request_id = row?.min_id;
+                id = row?.min_id;
               } else if (target.classList.contains('max')) {
-                request_id = row?.max_id;
+                id = row?.max_id;
               } else if (target.classList.contains('last')) {
-                request_id = row?.last_id;
+                id = row?.last_id;
               }
 
-              request_id && window.open(analysis.geturl('request', {request_id}), '_blank');
+              id && window.open(analysis.geturl('request', {id}), '_blank');
             }
           }
         }
@@ -904,7 +937,9 @@ export default {
 .input-group-text {
   padding: 0;
   justify-content: center;
-  width: 55px
+  width: 50px;
+  font-size: 80%;
+  font-weight: bold
 }
 
 input + .input-group-text {
