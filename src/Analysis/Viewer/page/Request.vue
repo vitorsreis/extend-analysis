@@ -249,7 +249,7 @@ export default {
       duration = profile.duration;
       color = analysis.format.tolerance(analysis.settings.tolerance.request.duration, duration * 1000);
       if (color.bg === 'secondary-subtle') color = {bg: 'secondary', text: 'white'};
-      if (profile.parent_id === -2) color = {bg: 'primary', text: 'white'};
+      if (profile.parent_id === -2) color = {bg: 'dark', text: 'white'};
       html += `<div class="badge bg-${color.bg} text-${color.text}">`;
       html += `${profile.key}`;
       if (profile.parent_id !== -2) html += `<br>${analysis.format.second(duration)}`;
@@ -375,7 +375,7 @@ td.hr {
   flex-wrap: wrap;
   text-align: center;
   position: relative;
-  min-width: 200px;
+  min-width: 100px;
   max-width: 100%;
 }
 
