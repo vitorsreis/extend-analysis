@@ -8,7 +8,7 @@
 
 Simple and powerful monitor of requests/server with interactive and realtime dashboard for a simple analysis and manual
 profile.
-Unit tests have passed on versions: ```5.6```, ```7.4```, ```8.1``` and ```8.2```
+Unit tests have passed on versions: ```5.6```, ```7.4```, ```8.1```, ```8.2``` and  ```8.3```
 
 ---
 
