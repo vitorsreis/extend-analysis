@@ -578,7 +578,7 @@ class Standard extends AbstractDriver
         }
 
         # Get request.dt.reqs.*
-        $where_reqs = ["1=1"];
+        $where_reqs = [];
         foreach ($wheres as $i) {
             if (
                 in_array($i[0], [
@@ -606,7 +606,7 @@ class Standard extends AbstractDriver
         }
         $where_reqs = implode('', $where_reqs);
         $where_reqs = substr($where_reqs, 0, $wheres ? -2 - strlen($i[3]) : -5);
-        $where_reqs = $where_reqs ?: '1=1';
+        $where_reqs = $where_reqs ?: '1';
 
         $this->query("
             SELECT
