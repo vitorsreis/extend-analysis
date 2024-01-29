@@ -652,6 +652,15 @@ class Standard extends AbstractDriver
                     `requests`
             ");
             $json['request']['dt']['reqs']['recordsTotal'] = $this->rows[0]['count'];
+
+            $this->query("
+                SELECT
+                    COUNT(*) AS `count`
+                FROM
+                    `requests`
+                WHERE
+                    $where_reqs
+            ");
             $json['request']['dt']['reqs']['recordsFiltered'] = $this->rows[0]['count'];
         }
 
@@ -712,6 +721,15 @@ class Standard extends AbstractDriver
                     `requests_avg`
             ");
             $json['request']['dt']['keys']['recordsTotal'] = $this->rows[0]['count'];
+
+            $this->query("
+                SELECT
+                    COUNT(*) AS `count`
+                FROM
+                    `requests_avg`
+                WHERE
+                    $wheres_keys
+            ");
             $json['request']['dt']['keys']['recordsFiltered'] = $this->rows[0]['count'];
         }
         return $json;
