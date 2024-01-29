@@ -11,7 +11,7 @@ const DIR_STORAGE = DIR_ROOT . '/storage';
 
 # Create storage directory
 if (!is_dir(DIR_STORAGE)) {
-    mkdir(DIR_STORAGE, 0644, true);
+    mkdir(DIR_STORAGE, 0777, true);
 }
 
 # Autoload
@@ -20,7 +20,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use VSR\Extend\Analysis;
 
 # Set driver
-$drive = new Analysis\Model\PDOSQLite(DIR_STORAGE . '/test.sqlite');
+$drive = new Analysis\Driver\Standard(DIR_STORAGE);
 $drive->install();
 
-Analysis::setModel($drive);
+Analysis::setDriver($drive);

@@ -25,18 +25,16 @@ composer require vitorsreis/extend-analysis
 ```php
 use VSR\Extend\Analysis;
 
-global $requestProfile;
-
 # Create driver
-$driver = new Analysis\Model\PDOSQLite(__DIR__ . '/monitor.sqlite');
-# $driver = new Analysis\Driver\PDOMySQL('localhost', 'root', '', 'analysis', 3306);
+$driver = new Analysis\Driver\Standard(__DIR__);
 
 # Set driver
-Analysis::setModel($driver);
+Analysis::setDriver($driver);
 
 # @param bool $autoSave [optional] Save automatically on shutdown event
 #                       default: true, if false, you need call $requestProfile->save() manually
-$requestProfile = new Analysis\Request();
+global $profile;
+$profile = new Analysis\Request();
 ```
 
 #### • Adding action to profile tree
@@ -45,16 +43,16 @@ Is recommended to use try/catch/finally for capture errors, however Error\Except
 Use at strategic points in the code to better build your tree, e.g. caller middleware, model proxy, ...
 
 ```php
-global $requestProfile;
-$requestProfile->start(/* profile_name */); # up level, start action monitor
+global $profile;
 try {
+    $profile->start(/* profile_name */); # up level, start action monitor
     // your code
 } catch (Throwable $e) {
-    $requestProfile->error($e); # register error in current level
+    $profile->error($e); # register error in current level
     // your code
 } finally {
     $extra = ...; // [optional] extra info about action
-    $requestProfile->stop($extra || null); # down level, end action monitor
+    $profile->stop($extra || null); # down level, end action monitor
 }
 ```
 
@@ -99,8 +97,4 @@ $requestProfile->onBeforeSave(function (array $request) {
 ```
 
 # Server Monitor
-
-### Simple start
-
-```php
-```
+Exemple of usage in [examples/serverTop.php](examples/serverTop.php)

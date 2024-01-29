@@ -5,15 +5,11 @@
 
 import * as Vue from 'vue';
 import VueSfc from 'vue3-sfc-loader';
-import 'bootstrap';
-import DataTable from 'datatables.net-vue3';
-import DataTablesCore from 'datatables.net-bs5';
+import * as Bootstrap from 'bootstrap';
 import * as ChartJS from 'chart.js';
 import * as VueChart from "vue-chartjs";
-
-DataTable.use(DataTablesCore);
-ChartJS.Chart.register(...ChartJS.registerables);
-window.ChartJS = VueChart;
+import DataTable from 'datatables.net-vue3';
+import DataTablesCore from 'datatables.net-bs5';
 
 window.analysis = {
     href: window.location.href,
@@ -32,7 +28,8 @@ window.analysis = {
 
     component(file) {
         return Vue.defineAsyncComponent(async () => await VueSfc.loadModule(file + ".vue", {
-            moduleCache: {vue: Vue},
+            moduleCache: { vue: Vue },
+            devMode: true,
             getFile: async () => await this.action('file', {file}, false, false),
             addStyle(textContent) {
                 const style = Object.assign(document.createElement('style'), {textContent});
@@ -91,11 +88,11 @@ window.analysis = {
     saveSettings() {
         localStorage.setItem('analysis.settings', JSON.stringify(analysis.settings));
     },
-    
+
     format: {
         number(value, decimals = 2) {
             if (value === undefined || value === null) value = 0;
-            return value
+            return parseFloat(value)
                 .toFixed(decimals)
                 .replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1');
         },
@@ -163,9 +160,19 @@ if (url.searchParams.get('d5whub-extend-analysis') === 'request') {
     main = analysis.component('/page/Dashboard.vue');
 }
 
+ChartJS.Chart.register(...ChartJS.registerables);
+DataTable.use(DataTablesCore);
+
+window.bootstrap = Bootstrap;
+window.ChartJS = VueChart;
+
 const app = Vue.createApp(main);
-app.use(DataTable);
 app.config.globalProperties.analysis = window.analysis = Vue.reactive(window.analysis);
+app.config.devtools = true;
+app.config.performance = true;
+app.use(DataTable);
+
+// fix "isCE" error on vue3-sfc-loader
 
 document.body.id = 'app';
 app.mount('#app');

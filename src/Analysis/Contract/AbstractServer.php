@@ -74,6 +74,6 @@ abstract class AbstractServer
             return false;
         }
 
-        return Analysis::getModel()->processServer($data);
+        return Analysis::getDriver()->processServer($data);
     }
 }

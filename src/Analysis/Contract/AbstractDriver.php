@@ -7,42 +7,47 @@
 
 namespace VSR\Extend\Analysis\Contract;
 
-abstract class AbstractModel
+abstract class AbstractDriver
 {
-    /**
-     * @var int group every second
-     */
-    const HIT_NO_GROUP = 1;
-
     /**
      * @var int group every 10 seconds
      */
-    const HIT_SECOND_10 = 2;
+    const HIT_SECOND_10 = 1;
 
     /**
      * @var int group every minute
      */
-    const HIT_MINUTE = 4;
+    const HIT_MINUTE = 2;
 
     /**
      * @var int group every 10 minutes
      */
-    const HIT_MINUTE_10 = 8;
+    const HIT_MINUTE_10 = 4;
 
     /**
      * @var int group every hour
      */
-    const HIT_HOUR = 16;
+    const HIT_HOUR = 8;
 
     /**
      * @var int group every day
      */
-    const HIT_DAY = 32;
+    const HIT_DAY = 16;
 
     /**
      * @var int group with every mode
      */
     const HIT_ALL = self::HIT_SECOND_10 | self::HIT_MINUTE | self::HIT_MINUTE_10 | self::HIT_HOUR | self::HIT_DAY;
+
+    /**
+     * @var int Replace mode
+     */
+    const HIT_RAW = 1024;
+
+    /**
+     * @var int Average mode
+     */
+    const HIT_AVG = 2048;
 
     abstract public function install();
 
@@ -67,10 +72,18 @@ abstract class AbstractModel
         $now = date('Y-m-d H:i:s');
 
         foreach ($data as $i) {
-            if (!$group || $group & static::HIT_NO_GROUP) {
+            if (!$group || $group & static::HIT_RAW) {
                 $hits[] = [
                     'key' => $i['key'],
                     'type' => isset($i['type']) ? $i['type'] : '',
+                    'ref' => isset($i['ref']) ? $i['ref'] : '',
+                    'value' => $i['value']
+                ];
+            }
+            if (!$group || $group & static::HIT_AVG) {
+                $hits[] = [
+                    'key' => $i['key'],
+                    'type' => 'avg',
                     'ref' => isset($i['ref']) ? $i['ref'] : '',
                     'value' => $i['value']
                 ];
@@ -103,7 +116,7 @@ abstract class AbstractModel
                 $hits[] = [
                     'key' => $i['key'],
                     'type' => 'h',
-                    'ref' => strtotime(substr($now, 0, -5) . ':00:00'),
+                    'ref' => strtotime(substr($now, 0, -6) . ':00:00'),
                     'value' => $i['value']
                 ];
             }

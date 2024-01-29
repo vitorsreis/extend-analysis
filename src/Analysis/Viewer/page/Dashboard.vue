@@ -6,11 +6,17 @@
 <template>
   <div class="container-fluid vh-100 w-100 d-flex flex-column align-content-stretch">
     <div class="position-fixed d-flex justify-content-between align-items-center mt-2 me-3"
-         style="right:0;top:0;width:85px">
+         style="right:0;top:0;width:115px">
       <span><span :class="'text-'+reportStatus.class">⬤</span> {{ reportStatus.text }}</span>
-      <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#settings">
-        <i class="fa fa-cog"></i>
-      </button>
+      <div>
+        <button type="button" :class="'btn border btn-sm me-2 ' + (wheres.length > 0 ? 'btn-primary' : 'btn-light')"
+                data-bs-toggle="modal" data-bs-target="#search">
+          <i :class="'fa fa-search ' + (wheres.length > 0 ? 'text-white' : '')"></i>
+        </button>
+        <button type="button" class="btn btn-light border btn-sm" data-bs-toggle="modal" data-bs-target="#settings">
+          <i class="fa fa-cog"></i>
+        </button>
+      </div>
     </div>
     <div class="row">
       <div class="col-md-4 col-12">
@@ -75,7 +81,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Settings</h5>
+          <h5 class="modal-title"><i class="fa fa-cog"></i> Settings</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -100,7 +106,7 @@
                 <option value="s10">10 Seconds</option>
                 <option value="i">Minutes</option>
                 <option value="i10">10 Minutes</option>
-                <option value="H">Hours</option>
+                <option value="h">Hours</option>
                 <option value="d">Days</option>
               </select>
             </div>
@@ -274,6 +280,132 @@
               </div>
             </div>
           </div>
+
+          <h5 class="mt-3">Ignore request keys</h5>
+          <div class="row mb-1">
+            <div class="col-sm-12">
+              <textarea id="input-ignore-request-keys" class="form-control" rows="4"
+                        placeholder="One request key per line and use * as wildcard"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="search" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fa fa-search"></i> Search</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <h5>Add condition</h5>
+          <div class="row mb-4">
+            <div class="input-group">
+              <select class="form-select" v-model="addWhere.field" style="width:20%"
+                      @change="addWhere.operator='=';addWhere.value=''">
+                <optgroup label="all">
+                  <option value="request_key">request_key</option>
+                </optgroup>
+                <optgroup label="only dt.hits">
+                  <option value="hits">hits</option>
+                  <option value="avg">avg</option>
+                  <option value="min">min</option>
+                  <option value="max">max</option>
+                  <option value="last">last</option>
+                </optgroup>
+                <optgroup label="only dt.reqs">
+                  <option value="date">date</option>
+                  <option value="duration">duration</option>
+                  <option value="memory">memory</option>
+                  <option value="profile_count">profile_count</option>
+                  <option value="http_code">http_code</option>
+                  <option value="method">method</option>
+                  <option value="url">url</option>
+                  <option value="error">error</option>
+                  <option value="extra">extra</option>
+                </optgroup>
+              </select>
+              <select class="form-select" style="width:20%" v-model="addWhere.operator">
+                <option value="=">=</option>
+                <option value="!=">!=</option>
+                <option value=">"
+                        v-if="['request_key','method','url','extra'].indexOf(addWhere.field) === -1">>
+                </option>
+                <option value=">="
+                        v-if="['request_key','method','url','extra'].indexOf(addWhere.field) === -1">>=
+                </option>
+                <option value="<"
+                        v-if="['request_key','method','url','extra'].indexOf(addWhere.field) === -1"><
+                </option>
+                <option value="<="
+                        v-if="['request_key','method','url','extra'].indexOf(addWhere.field) === -1"><=
+                </option>
+                <option value="LIKE">LIKE</option>
+                <option value="NOT LIKE">NOT LIKE</option>
+              </select>
+              <input type="datetime-local" class="form-control" v-model="addWhere.value" style="width:40%"
+                     placeholder="NULL" v-if="['date'].indexOf(addWhere.field) !== -1">
+              <input type="number" step="0.1" class="form-control" v-model="addWhere.value" style="width:40%"
+                     placeholder="NULL"
+                     v-else-if="['duration','memory','avg','min','max','last'].indexOf(addWhere.field) !== -1">
+              <input type="number" step="1" class="form-control" v-model="addWhere.value" style="width:40%"
+                     placeholder="NULL" v-else-if="['profile_count','http_code','hits','error'].indexOf(addWhere.field) !== -1">
+              <select class="form-select" v-model="addWhere.value" style="width:40%"
+                      v-else-if="['method'].indexOf(addWhere.field) !== -1">
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="PUT">PUT</option>
+                <option value="DELETE">DELETE</option>
+                <option value="PATCH">PATCH</option>
+                <option value="CONNECT">CONNECT</option>
+                <option value="OPTIONS">OPTIONS</option>
+                <option value="TRACE">TRACE</option>
+              </select>
+              <select class="form-select" v-model="addWhere.value" style="width:40%"
+                      v-else-if="['has_error'].indexOf(addWhere.field) !== -1">
+                <option value="TRUE">TRUE</option>
+                <option value="FALSE">FALSE</option>
+              </select>
+              <input type="text" class="form-control" v-model="addWhere.value" style="width:40%" placeholder="NULL"
+                     v-else>
+
+              <button class="btn btn-light border" type="button"
+                      @click="addWhere.value = addWhere.value ? addWhere.value : 'NULL'; wheres.push({ ...addWhere }); updateData()">
+                <i class="fa fa-plus"></i>
+              </button>
+            </div>
+          </div>
+
+          <h5>Current conditions</h5>
+          <div class="row" v-if="wheres.length < 1">
+            <div class="col text-center text-center">
+              No conditions!
+            </div>
+          </div>
+          <table class="table table-sm align-middle m-0" v-else>
+            <tbody>
+            <tr v-for="where in wheres">
+              <td>
+                `{{ where.field }}`
+                {{ where.operator }}
+                <span
+                    v-html="where.value ? (/^-?\d+(\.\d+)?$/.test(where.value) ? where.value : (['NULL', 'FALSE', 'TRUE'].indexOf(where.value?.toUpperCase()) !== -1 ? `<i>${where.value?.toUpperCase()}</i>` : `&quot;${where.value}&quot;`)) : '<i>NULL</i>'"/>
+              </td>
+              <td class="text-end">
+                <select class="form-select form-select-sm d-inline-block me-2" v-model="where.and_or" style="width:auto">
+                  <option value="AND">AND</option>
+                  <option value="OR">OR</option>
+                </select>
+                <button class="btn btn-danger btn-sm" type="button" @click="wheres.splice(wheres.indexOf(where), 1)">
+                  <i class="fa fa-trash text-white"></i>
+                </button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -303,18 +435,18 @@ export default {
     resize() {
       let new_len = dtPageLength();
 
-      let old_len_reqs = this.$refs['dt-reqs'].$refs.dt.dt.page.info().length;
-      if (old_len_reqs !== new_len) {
+      let old_len_reqs = this.$refs['dt-reqs'].$refs.dt.dt?.page.info()?.length;
+      if (old_len_reqs && old_len_reqs !== new_len) {
         console.log('dt-reqs-page-length-change', old_len_reqs, new_len);
-        this.$refs['dt-reqs'].$refs.dt.dt.page.len(new_len);
-        this.$refs['dt-reqs'].$refs.dt.dt.draw(false);
+        this.$refs['dt-reqs'].$refs.dt.dt?.page.len(new_len);
+        this.$refs['dt-reqs'].$refs.dt.dt?.draw(false);
       }
 
-      let old_len_keys = this.$refs['dt-keys'].$refs.dt.dt.page.info().length;
-      if (old_len_keys !== new_len) {
+      let old_len_keys = this.$refs['dt-keys'].$refs.dt.dt?.page.info()?.length;
+      if (old_len_keys && old_len_keys !== new_len) {
         console.log('dt-keys-page-length-change', old_len_keys, new_len);
-        this.$refs['dt-keys'].$refs.dt.dt.page.len(new_len);
-        this.$refs['dt-keys'].$refs.dt.dt.draw(false);
+        this.$refs['dt-keys'].$refs.dt.dt?.page.len(new_len);
+        this.$refs['dt-keys'].$refs.dt.dt?.draw(false);
       }
 
       if (old_len_reqs !== new_len || old_len_keys !== new_len) {
@@ -335,32 +467,47 @@ export default {
       this.reportStatus.class = 'warning';
       this.reportStatus.text = '...';
 
-      let dtReqsOrder = this.$refs['dt-reqs'].$refs.dt.dt.order()[0][0] || false;
+      let dtReqsOrder = this.$refs['dt-reqs'].$refs.dt.dt?.order() || false;
+      dtReqsOrder = dtReqsOrder[0] || false;
+      dtReqsOrder = dtReqsOrder[0] || false;
       if (dtReqsOrder) {
-        dtReqsOrder = this.$refs['dt-reqs'].$refs.dt.dt.settings()[0].aoColumns[dtReqsOrder].data;
+        dtReqsOrder = this.$refs['dt-reqs'].$refs.dt.dt?.settings()[0].aoColumns[dtReqsOrder].data;
       } else {
         dtReqsOrder = 'start';
       }
 
-      let dtKeysOrder = this.$refs['dt-keys'].$refs.dt.dt.order()[0][0] || false;
+      let dtReqsDir = this.$refs['dt-reqs']?.$refs.dt.dt?.order() || false;
+      dtReqsDir = dtReqsDir[0] || false;
+      dtReqsDir = dtReqsDir[1] || 'desc';
+
+      let dtKeysOrder = this.$refs['dt-keys'].$refs.dt.dt?.order() || false;
+      dtKeysOrder = dtKeysOrder[0] || false;
+      dtKeysOrder = dtKeysOrder[0] || false;
       if (dtKeysOrder) {
-        dtKeysOrder = this.$refs['dt-keys'].$refs.dt.dt.settings()[0].aoColumns[dtKeysOrder].data;
+        dtKeysOrder = this.$refs['dt-keys'].$refs.dt.dt?.settings()[0].aoColumns[dtKeysOrder].data;
       } else {
         dtKeysOrder = 'avg';
       }
+
+      let dtKeysDir = this.$refs['dt-keys']?.$refs.dt.dt?.order() || false;
+      dtKeysDir = dtKeysDir[0] || false;
+      dtKeysDir = dtKeysDir[1] || 'desc';
+
+      console.log(JSON.stringify([...this.wheres.map(i => [i.field, i.operator, i.value, i.and_or])]));
 
       let start_time = new Date().getTime();
       this.report = await analysis.action('viewer-data', {
         chartGroupBy: analysis.settings.chart.groupBy,
         chartLength: analysis.settings.chart.length,
-        dtReqsStart: this.$refs['dt-reqs']?.$refs.dt.dt.page.info().start || 0,
-        dtReqsLength: this.$refs['dt-reqs']?.$refs.dt.dt.page.info().length || 10,
+        dtReqsStart: this.$refs['dt-reqs']?.$refs.dt.dt?.page.info()?.start || 0,
+        dtReqsLength: this.$refs['dt-reqs']?.$refs.dt.dt?.page.info()?.length || 10,
         dtReqsOrder,
-        dtReqsDir: this.$refs['dt-reqs']?.$refs.dt.dt.order()[0][1] || 'desc',
-        dtKeysStart: this.$refs['dt-keys']?.$refs.dt.dt.page.info().start || 0,
-        dtKeysLength: this.$refs['dt-keys']?.$refs.dt.dt.page.info().length || 10,
+        dtReqsDir,
+        dtKeysStart: this.$refs['dt-keys']?.$refs.dt.dt?.page.info()?.start || 0,
+        dtKeysLength: this.$refs['dt-keys']?.$refs.dt.dt?.page.info()?.length || 10,
         dtKeysOrder,
-        dtKeysDir: this.$refs['dt-keys']?.$refs.dt.dt.order()[0][1] || 'desc',
+        dtKeysDir,
+        wheres: JSON.stringify([...this.wheres.map(i => [i.field, i.operator, i.value, i.and_or])]),
       });
 
       this.$refs['dt-keys'].redraw(
@@ -385,6 +532,13 @@ export default {
   data() {
     return {
       updateDataTimeout: null,
+      addWhere: {
+        field: 'request_key',
+        operator: '=',
+        value: null,
+        and_or: 'AND'
+      },
+      wheres: [],
       report: {},
       reportStatus: {
         text: '...',
@@ -500,8 +654,8 @@ export default {
           zombie: this.report.server?.current.thr_zombie
         },
 
-        db_size: analysis.format.size(this.report.server?.current?.db_size || 0, ' MB'),
-        db_size_color: analysis.format.tolerance(analysis.settings.tolerance.server.db_size, this.report.server?.current?.db_size || 0),
+        db_size: `${analysis.format.size(this.report.server?.current?.db_size?.full || 0, ' MB')} (${analysis.format.size(this.report.server?.current?.db_size?.file || 0, ' MB')})`,
+        db_size_color: analysis.format.tolerance(analysis.settings.tolerance.server.db_size?.full, this.report.server?.current?.db_size?.full || 0),
 
         chart: {
           data: {
@@ -625,7 +779,7 @@ export default {
               },
               {
                 data: "url",
-                title: "URL"
+                title: "URI"
               },
               {
                 data: "error_count",
@@ -642,6 +796,7 @@ export default {
             },
             click: (event) => {
               let id = null, target = event.target;
+              console.log(target);
 
               // Capture change page or change order, and force update data
               if (target.hasAttribute('data-dt-idx') && !target.hasAttribute('aria-current')) {
@@ -660,7 +815,7 @@ export default {
                 return;
               }
 
-              id = this.$refs['dt-reqs'].$refs.dt.dt.row(target).data()?.id;
+              id = this.$refs['dt-reqs'].$refs.dt.dt?.row(target).data()?.id;
               id && window.open(analysis.geturl('request', {id}), '_blank');
             }
           },
@@ -725,18 +880,22 @@ export default {
             },
             click: (event) => {
               let id = null, target = event.target;
+              console.log(target);
 
               // Capture change page or change order, and force update data
               if (target.hasAttribute('data-dt-idx') && !target.hasAttribute('aria-current')) {
+                console.log('XXXx');
                 setTimeout(() => this.updateData(), 10);
                 return;
               }
               if (target.nodeName === 'TH' && target.classList.contains('sorting')) {
+                console.log('ZZZz');
                 setTimeout(() => this.updateData(), 10);
                 return;
               }
 
               if (!target.classList.contains('badge')) {
+                console.log('AAAa');
                 return;
               }
 
@@ -744,17 +903,21 @@ export default {
                 target = target.parentNode;
               }
               if (!target) {
+                console.log('BBBb');
                 return;
               }
 
-              let row = this.$refs['dt-keys'].$refs.dt.dt.row(target).data();
+              let row = this.$refs['dt-keys'].$refs.dt.dt?.row(target).data();
               if (target.classList.contains('min')) {
                 id = row?.min_id;
               } else if (target.classList.contains('max')) {
                 id = row?.max_id;
               } else if (target.classList.contains('last')) {
                 id = row?.last_id;
+              } else {
+                console.log('CCCc', target);
               }
+              console.log('EEEe', id, target, row);
 
               id && window.open(analysis.geturl('request', {id}), '_blank');
             }
@@ -879,5 +1042,9 @@ input + .input-group-text {
     max-height: 315px;
     margin-bottom: 30px !important;
   }
+}
+
+#search tr:last-child select {
+  display: none !important
 }
 </style>

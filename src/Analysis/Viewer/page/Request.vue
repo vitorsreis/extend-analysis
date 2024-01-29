@@ -54,7 +54,7 @@
           <tr>
             <td><b>Error</b></td>
             <td>
-              <div class="bg-secondary-subtle">
+              <div class="bg-secondary-subtle w-100">
                 <table class="table table-sm mb-0">
                   <tbody>
                   <tr v-for="(value, key) in report.error">
@@ -69,7 +69,7 @@
           <tr>
             <td><b>Extra</b></td>
             <td>
-              <div class="bg-secondary-subtle">
+              <div class="bg-secondary-subtle w-100">
                 <table class="table table-sm mb-0">
                   <tbody>
                   <tr v-for="(value, key) in report.extra">
@@ -90,19 +90,19 @@
           </tr>
           <tr>
             <td><b>URL</b></td>
-            <td>{{ report.method }} {{ report.url }}</td>
-          </tr>
-          <tr>
-            <td><b>IP</b></td>
-            <td>{{ report.ip }}</td>
+            <td>{{ report.method }} <a :href="'//'+report.url" target="_blank">{{ report.url }}</a></td>
           </tr>
           <tr>
             <td><b>Referer</b></td>
-            <td>{{ report.referer }}</td>
+            <td><a v-if="report.referer" :href="report.referer" target="_blank">{{ report.referer }}</a></td>
           </tr>
           <tr>
             <td><b>User-Agent</b></td>
             <td>{{ report.useragent }}</td>
+          </tr>
+          <tr>
+            <td><b>IP</b></td>
+            <td><a v-if="report.ip" :href="'https://whatismyipaddress.com/ip/' + report.ip" target="_blank">{{ report.ip }}</a></td>
           </tr>
           <tr>
             <td colspan="2" class="hr"></td>
@@ -110,7 +110,7 @@
           <tr>
             <td><b>GET</b></td>
             <td>
-              <div class="bg-secondary-subtle">
+              <div class="bg-secondary-subtle w-100">
                 <table class="table table-sm mb-0">
                   <tbody>
                   <tr v-for="(value, key) in report.get">
@@ -125,7 +125,7 @@
           <tr>
             <td><b>POST</b></td>
             <td>
-              <div class="bg-secondary-subtle">
+              <div class="bg-secondary-subtle w-100">
                 <table class="table table-sm mb-0">
                   <tbody>
                   <tr v-for="(value, key) in report.post">
@@ -140,7 +140,7 @@
           <tr>
             <td><b>RAW_POST</b></td>
             <td>
-              <div class="bg-secondary-subtle">
+              <div class="bg-secondary-subtle w-100">
                 {{ report.raw_post }}
               </div>
             </td>
@@ -148,7 +148,7 @@
           <tr>
             <td><b>HEADERS</b></td>
             <td>
-              <div class="bg-secondary-subtle">
+              <div class="bg-secondary-subtle w-100">
                 <table class="table table-sm mb-0">
                   <tbody>
                   <tr v-for="(value, key) in report.headers">
@@ -163,7 +163,7 @@
           <tr>
             <td><b>COOKIES</b></td>
             <td>
-              <div class="bg-secondary-subtle">
+              <div class="bg-secondary-subtle w-100">
                 <table class="table table-sm mb-0">
                   <tbody>
                   <tr v-for="(value, key) in report.cookies">
@@ -178,7 +178,7 @@
           <tr>
             <td><b>SERVER</b></td>
             <td>
-              <div class="bg-secondary-subtle">
+              <div class="bg-secondary-subtle w-100">
                 <table class="table table-sm mb-0">
                   <tbody>
                   <tr v-for="(value, key) in report.server">
@@ -193,7 +193,7 @@
           <tr>
             <td><b>INC. FILES</b></td>
             <td>
-              <div class="bg-secondary-subtle">
+              <div class="bg-secondary-subtle w-100">
                 <table class="table table-sm mb-0">
                   <tbody>
                   <tr v-for="(value, key) in report.inc_files">
@@ -230,6 +230,8 @@ export default {
     this.id = params.get('id') || false;
     if (!this.id) this.loading = false;
     else this.load(this.id);
+
+    document.addEventListener('click', this.profileClick);
   },
   methods: {
     async load(id) {
@@ -237,7 +239,7 @@ export default {
       this.loading = false;
     },
     draw(profile, last_time) {
-      let html = '', starting = last_time === false, duration, color;
+      let html = '', starting = last_time === false, duration, color, text;
 
       html += '<div class="profile">';
       if (last_time) {
@@ -250,9 +252,45 @@ export default {
       color = analysis.format.tolerance(analysis.settings.tolerance.request.duration, duration * 1000);
       if (color.bg === 'secondary-subtle') color = {bg: 'secondary', text: 'white'};
       if (profile.parent_id === -2) color = {bg: 'dark', text: 'white'};
-      html += `<div class="badge bg-${color.bg} text-${color.text}">`;
-      html += `${profile.key}`;
-      if (profile.parent_id !== -2) html += `<br>${analysis.format.second(duration)}`;
+      if (profile.error) color = {bg: 'danger', text: 'white'};
+
+      let popover = '';
+      if (profile.error) {
+        popover += `<div class="bg-danger">`;
+        popover += `<b>Error</b> #${profile.error.code} ${profile.error.message} on file ${profile.error.file}:${profile.error.line}`;
+        popover += `</div>`;
+      }
+      if (profile.extra) {
+        popover += `<div class="bg-secondary-subtle w-100">`;
+        popover += `<b>Extra</b>`;
+        popover += `<table class="table table-sm mb-0">`;
+        popover += `<tbody>`;
+        for (let [k, v] of Object.entries(profile.extra)) {
+          popover += `<tr>`;
+          popover += `<td><b>${k}</b></td>`;
+          popover += `<td>${v}</td>`;
+          popover += `</tr>`;
+        }
+        popover += `</tbody>`;
+        popover += `</table>`;
+        popover += `</div>`;
+      }
+      popover = popover ? popover.replace(/"/g, '&quot;') : false;
+      popover && (popover = popover.replace(/[\r\n]+/g, ' '));
+
+      html += `<div class="badge bg-${color.bg}"` + (popover ? `data-toggle="popover" data-content="${popover}"` : '') + `>`;
+      html += `<span class="text-${color.text}">`;
+      if (profile.index) html += `#${profile.index} `;
+      if (profile.parent_id !== -2) html += `${analysis.format.second(duration)} `;
+      if (profile.count) html += `[${profile.count}] `;
+      if (profile.error) html += `<i class="fa fa-exclamation-triangle" style="color:inherit"></i> `;
+      if (profile.extra) html += `<i class="fa fa-circle-info" style="color:inherit"></i> `;
+      if (profile.parent_id !== -2) html += '</br>';
+      text = profile.key;
+      if (text.length > 40) text = text.substring(0, 47) + '...';
+      html += `${text}`;
+
+      html += `</span>`;
       html += `</div>`;
       if (profile.children && profile.children.length > 0) {
         html += '<div class="profile-children">';
@@ -277,6 +315,41 @@ export default {
       html += '</div>';
 
       return html;
+    },
+    profileClick(event) {
+      let target = event.target, popovers;
+
+      // remove all popovers without target click
+      popovers = document.querySelectorAll('.popover');
+      for (let i of popovers) {
+        if (i !== target && !i.contains(target)) {
+          // animate fade out javascript pure
+          let opacity = 1;
+          let interval = setInterval(function () {
+            if (opacity <= 0.1) {
+              clearInterval(interval);
+              i.remove();
+            }
+            i.style.opacity = opacity;
+            i.style.filter = 'alpha(opacity=' + opacity * 100 + ")";
+            opacity -= opacity * 0.1;
+          }, 5);
+        }
+      }
+
+      // check if parents have [data-toggle="popover"]
+      while (target && target !== document) {
+        if (target.dataset.toggle === 'popover') {
+          let popover = new bootstrap.Popover(target, {
+            html: true,
+            sanitize: false,
+            content: target.dataset.content
+          });
+          popover.show();
+          break;
+        }
+        target = target.parentNode;
+      }
     }
   },
   computed: {
@@ -310,26 +383,35 @@ export default {
         value: analysis.format.size(this.report.memory_peak, 'MB')
       }
     },
-
     profile() {
-      let result = {};
+      let result = {}, count, children;
 
       for (let i of Object.values(this.report.profile).reverse()) {
         if (typeof result[i.parent_id] === 'undefined') result[i.parent_id] = {
           id: i.parent_id,
+          count: 0,
           children: []
+        }
+
+        children = (typeof result[i.index] !== 'undefined' ? result[i.index].children : []).reverse();
+
+        count = children.length;
+        for (let j of children) {
+          j.error && !i.error && (i.error = -3);
+          count += j.count;
         }
 
         result[i.parent_id].children.push({
           ...i,
-          children: (typeof result[i.index] !== 'undefined' ? result[i.index].children : []).reverse()
+          count,
+          children
         });
         delete result[i.index];
       }
 
       result = result[-1]?.children || [];
 
-      return this.draw(result[0], false);
+      return result[0] ? this.draw(result[0], false) : '<div class="profile"><div class="badge bg-danger">No profile</div></div>';
     }
   }
 }
@@ -339,6 +421,10 @@ export default {
 .container-fluid > .row > div {
   min-height: 100vh;
   max-height: 100vh;
+  overflow: auto
+}
+
+table td {
   overflow: auto
 }
 
@@ -404,12 +490,27 @@ td.hr {
   width: 10px
 }
 
+.profile:not(:has(.profile-children)) .badge,
+.profile:has(.profile-children):not(:has(.profile+.profile)) .badge {
+  min-width: 150px;
+  max-width: 150px;
+  text-overflow: ellipsis;
+  overflow: hidden
+}
+
 .profile .badge {
   margin: 0 15px;
   text-align: left;
 }
 
+.profile .badge > span {
+  position: sticky;
+  left: 0
+}
+
 .profile .interval {
+  padding-left: 35px;
+  text-align: left;
   background: #eee;
   margin: 7px 0 13px;
   font-size: 10px;
@@ -421,8 +522,7 @@ td.hr {
   position: absolute;
   font-size: 40px;
   top: -20px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 40px;
   color: rgb(108, 117, 125);
   z-index: -1
 }
@@ -440,5 +540,17 @@ td.hr {
 .profile .interval.text-warning:before {
   border-color: rgb(255, 193, 7);
   color: rgb(255, 193, 7);
+}
+
+.profile i {
+  font-size: 10px
+}
+
+.popover {
+  max-width: 500px
+}
+
+.popover-body {
+  overflow-x: auto;
 }
 </style>

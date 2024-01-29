@@ -165,7 +165,7 @@ class Request
 
             'http_code' => !empty(http_response_code()) ? http_response_code() : null,
             'method' => !empty($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : null,
-            'url' => !empty($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : null,
+            'url' => rtrim((!empty($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '') . (!empty($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''), '/') ?: null,
             'ip' => $this->getIP(),
             'referer' => !empty($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : null,
             'useragent' => !empty($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : null,
@@ -187,19 +187,24 @@ class Request
             'profile' => $this->profile,
             'profile_count' => $this->profileCount
         ];
-        $beforeSave = isset($this->beforeSave) && is_callable($this->beforeSave) ? $this->beforeSave : false;
-        $this->__destruct();
 
         try {
-            $request = $beforeSave ? call_user_func($this->beforeSave, $request) : $request;
+            $request = isset($this->beforeSave) && is_callable($this->beforeSave)
+                ? call_user_func($this->beforeSave, $request)
+                : $request;
+        } finally {
+            $this->__destruct();
+        }
+
+        try {
             if (!$request) {
                 return false;
             }
 
             # Save request
-            return Analysis::getModel()->processRequest($request);
+            return Analysis::getDriver()->processRequest($request);
         } finally {
-            unset($beforeSave, $request, $profile);
+            unset($request);
         }
     }
 

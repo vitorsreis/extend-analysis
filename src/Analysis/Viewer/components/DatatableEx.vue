@@ -88,7 +88,7 @@ export default {
         this.draw.error = error;
         this.$props.loading = false;
       }
-      this.$refs.dt.dt.draw(false);
+      this.$refs.dt.dt?.draw(false);
     }
   }
 }

@@ -8,19 +8,19 @@
 namespace VSR\Extend;
 
 use RuntimeException;
-use VSR\Extend\Analysis\Contract\AbstractModel;
+use VSR\Extend\Analysis\Contract\AbstractDriver;
 
 class Analysis
 {
     /**
-     * @var AbstractModel
+     * @var AbstractDriver
      */
     private static $model;
 
     /**
-     * @return AbstractModel
+     * @return AbstractDriver
      */
-    public static function getModel()
+    public static function getDriver()
     {
         if (!isset(static::$model)) {
             throw new RuntimeException('Driver not defined');
@@ -28,7 +28,7 @@ class Analysis
         return static::$model;
     }
 
-    public static function setModel(AbstractModel $model)
+    public static function setDriver(AbstractDriver $model)
     {
         static::$model = $model;
     }

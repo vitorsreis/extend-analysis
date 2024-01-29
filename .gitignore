@@ -5,3 +5,7 @@ composer.lock
 /src/Analysis/Dashboard/dist/
 /src/Analysis/Dashboard/node_modules/
 /src/Analysis/Dashboard/package-lock.json
+
+/package.json
+/package-lock.json
+/node_modules/

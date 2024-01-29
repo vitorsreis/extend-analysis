@@ -5,21 +5,21 @@
  * @author Vitor Reis <vitor@d5w.com.br>
  */
 
-namespace VSR\Extend\Analysis\Model;
+namespace VSR\Extend\Analysis\Driver;
 
 use Exception;
 use PDO;
 use RuntimeException;
-use VSR\Extend\Analysis\Contract\AbstractModel;
+use VSR\Extend\Analysis\Contract\AbstractDriver;
 
-class PDOSQLite extends AbstractModel
+class Standard extends AbstractDriver
 {
     /**
      * @var PDO
      */
     protected $instance;
 
-    protected $filepath;
+    protected $directory;
 
     protected $lastId = false;
 
@@ -30,16 +30,18 @@ class PDOSQLite extends AbstractModel
     protected $onConflictSupport = false;
 
     /**
-     * @param string $filename File path
+     * @param string $directory Directory
      */
-    public function __construct($filename)
+    public function __construct($directory)
     {
         if (extension_loaded('pdo_sqlite') === false) {
             throw new RuntimeException('PDO SQLite extension is not loaded');
         }
 
-        $this->filepath = $filename;
-        $this->instance = new PDO("sqlite:$filename");
+        $this->directory = $directory;
+        $this->makeDirectory();
+
+        $this->instance = new PDO("sqlite:$this->directory/analysis.sqlite");
         $this->onConflictSupport = version_compare(
             $this->instance->query('select sqlite_version()')->fetch()[0],
             '3.24.0',
@@ -55,6 +57,13 @@ class PDOSQLite extends AbstractModel
             $this->lastId,
             $this->affected
         );
+    }
+
+    private function makeDirectory()
+    {
+        if (!is_dir("$this->directory/profiles")) {
+            mkdir("$this->directory/profiles", 0644, true);
+        }
     }
 
     private function query($command, ...$values)
@@ -187,39 +196,6 @@ class PDOSQLite extends AbstractModel
         $this->query("CREATE INDEX IF NOT EXISTS `idx_requests_avg-min` ON `requests_avg` (`min`)");
         $this->query("CREATE INDEX IF NOT EXISTS `idx_requests_avg-max` ON `requests_avg` (`max`)");
         $this->query("CREATE INDEX IF NOT EXISTS `idx_requests_avg-hits` ON `requests_avg` (`hits`)");
-
-        $this->query("
-            CREATE TABLE IF NOT EXISTS `profiles` (
-                `key` varchar(255) NOT NULL,
-                `id` integer,
-                `index` integer,
-                `parent_id` integer,
-                `start` float NOT NULL,
-                `end` float NOT NULL,
-                `duration` float NOT NULL,
-                `memory` bigint DEFAULT NULL,
-                `memory_peak` bigint DEFAULT NULL,
-                `error` json DEFAULT NULL,
-                `extra` json DEFAULT NULL,
-                PRIMARY KEY (`id`,`index`,`parent_id`)
-            )
-        ");
-        // $this->query("
-        //     CREATE TABLE IF NOT EXISTS `profiles_avg` (
-        //         `key` varchar(255) PRIMARY KEY,
-        //         `avg` float DEFAULT NULL,
-        //         `min` float DEFAULT NULL,
-        //         `max` float DEFAULT NULL,
-        //         `last` float DEFAULT NULL,
-        //         `hits` bigint DEFAULT NULL,
-        //         `create_at` integer DEFAULT CURRENT_TIMESTAMP,
-        //         `update_at` integer DEFAULT CURRENT_TIMESTAMP
-        //     )
-        // ");
-        // $this->query("CREATE INDEX IF NOT EXISTS `idx_profiles_avg-avg` ON `profiles_avg` (`avg`)");
-        // $this->query("CREATE INDEX IF NOT EXISTS `idx_profiles_avg-min` ON `profiles_avg` (`min`)");
-        // $this->query("CREATE INDEX IF NOT EXISTS `idx_profiles_avg-max` ON `profiles_avg` (`max`)");
-        // $this->query("CREATE INDEX IF NOT EXISTS `idx_profiles_avg-hits` ON `profiles_avg` (`hits`)");
     }
 
     private function queryHit(...$values)
@@ -274,9 +250,9 @@ class PDOSQLite extends AbstractModel
         if ($this->onConflictSupport) {
             $this->query("
                 INSERT INTO `$collection`
-                    (`key`, `hits`, `avg`, `min`, `max`, `last`)
+                    (`key`, `hits`, `avg`, `min`, `min_id`, `max`, `max_id`, `last`, `last_id`)
                 VALUES
-                    (:key, 1, :duration, :duration, :duration, :duration)
+                    (:key, 1, :duration, :duration, :id, :duration, :id, :duration, :id)
                 ON CONFLICT (`key`) DO UPDATE SET
                     `hits` = `hits` + 1,
                     `avg` = ((`avg` * `hits`) + :duration) / (`hits` + 1),
@@ -344,7 +320,7 @@ class PDOSQLite extends AbstractModel
     {
         // Requests duration avg and hits
         $this->queryHit(...$this->hitGroup(
-            self::HIT_NO_GROUP | self::HIT_ALL,
+            self::HIT_AVG | self::HIT_ALL,
             ['key' => 'req', 'value' => $request['duration']]
         ));
 
@@ -375,11 +351,13 @@ class PDOSQLite extends AbstractModel
         }
         unset($index, $item);
 
-        $this->queryInsert('profiles', ...$profile);
-
-        // $this->queryAvg('profiles_avg', ...array_map(function ($i) {
-        //     return ['key' => $i['key'], 'duration' => $i['duration']];
-        // }, $profile));
+        if ($profile) {
+            $this->makeDirectory();
+            file_put_contents(
+                "$this->directory/profiles/$id.json.gz",
+                gzencode(json_encode($profile, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES))
+            );
+        }
 
         unset($profile);
     }
@@ -387,7 +365,7 @@ class PDOSQLite extends AbstractModel
     public function processServer($data)
     {
         $this->queryHit(...$this->hitGroup(
-            self::HIT_NO_GROUP,
+            self::HIT_RAW,
             ['key' => 'uptime', 'value' => $data['uptime']],
             ['key' => 'cpu', 'value' => $data['cpu']],
             ['key' => 'thr_total', 'value' => $data['thr_total']],
@@ -420,7 +398,19 @@ class PDOSQLite extends AbstractModel
 
     public function getDatabaseSize()
     {
-        return filesize($this->filepath) / 1024 / 1024;
+        $filesize = is_file("$this->directory/analysis.sqlite")
+            ? filesize("$this->directory/analysis.sqlite")
+            : 0;
+
+        if ($io = @popen('/usr/bin/du -sb ' . realpath("$this->directory/.."), 'r')) {
+            $size = $filesize + intval(fgets($io, 80));
+            pclose($io);
+        }
+
+        return [
+            'file' => empty($filesize) ? 0 : $filesize / 1024 / 1024,
+            'full' => empty($size) ? 0 : $size / 1024 / 1024
+        ];
     }
 
     public function getViewerData($options)
@@ -514,6 +504,7 @@ class PDOSQLite extends AbstractModel
         $dtKeysLength = !empty($options['dtKeysLength']) ? $options['dtKeysLength'] : 10;
         $dtKeysOrder = !empty($options['dtKeysOrder']) ? $options['dtKeysOrder'] : 'avg';
         $dtKeysDir = !empty($options['dtKeysDir']) ? $options['dtKeysDir'] : 'desc';
+        $wheres = !empty($options['wheres']) ? json_decode($options['wheres'], true) ?: [] : [];
 
         # Get server.current.*, request.current.*
         $this->query("
@@ -522,7 +513,8 @@ class PDOSQLite extends AbstractModel
             FROM
                 `hits`
             WHERE
-                `type` = '' AND `ref` = ''
+                (`type` = '' AND `ref` = '')
+                OR (`key` = 'req' AND `type` = 'avg' AND `ref` = '')
             ORDER BY
                 `ref` DESC
         ");
@@ -585,6 +577,36 @@ class PDOSQLite extends AbstractModel
         }
 
         # Get request.dt.reqs.*
+        $where_reqs = ["1=1"];
+        foreach ($wheres as $i) {
+            if (
+                in_array($i[0], [
+                    'request_key',
+                    'date',
+                    'duration',
+                    'memory',
+                    'profile_count',
+                    'http_code',
+                    'method',
+                    'url',
+                    'has_error',
+                    'extra'
+                ])
+            ) {
+                if ($i[0] === 'request_key') {
+                    $i[0] = 'key';
+                }
+                if (is_numeric($i[2]) || in_array(strtoupper($i[2]), ['NULL', 'TRUE', 'FALSE'])) {
+                    $where_reqs[] = "`$i[0]` $i[1] " . strtoupper($i[2]) . " $i[3] ";
+                } else {
+                    $where_reqs[] = "`$i[0]` $i[1] {$this->instance->quote($i[2])} $i[3] ";
+                }
+            }
+        }
+        $where_reqs = implode('', $where_reqs);
+        $where_reqs = substr($where_reqs, 0, $wheres ? -2 - strlen($i[3]) : -5);
+        $where_reqs = $where_reqs ?: '1=1';
+
         $this->query("
             SELECT
                 `id`,
@@ -599,6 +621,8 @@ class PDOSQLite extends AbstractModel
                 `error_count`
             FROM
                 `requests`
+            WHERE
+                $where_reqs
             ORDER BY
                 `$dtReqsOrder` $dtReqsDir
             LIMIT
@@ -607,6 +631,7 @@ class PDOSQLite extends AbstractModel
             'start' => $dtReqsStart,
             'length' => $dtReqsLength
         ]);
+
         if ($this->rows) {
             foreach ($this->rows as $i) {
                 $i['start'] = intval($i['start']);
@@ -615,6 +640,7 @@ class PDOSQLite extends AbstractModel
                 $i['profile_count'] = intval($i['profile_count']);
                 $i['http_code'] = intval($i['http_code']);
                 $i['error_count'] = intval($i['error_count']);
+                $i['url'] = strlen($i['url']) > 100 ? substr($i['url'], 0, 97) . '...' : $i['url'];
                 $json['request']['dt']['reqs']['data'][] = $i;
             }
 
@@ -629,6 +655,23 @@ class PDOSQLite extends AbstractModel
         }
 
         # Get request.dt.keys.*
+        $wheres_keys = [];
+        foreach ($wheres as $i) {
+            if (in_array($i[0], ['request_key', 'hits', 'avg', 'min', 'max', 'last'])) {
+                if ($i[0] === 'request_key') {
+                    $i[0] = 'key';
+                }
+                if (is_numeric($i[2]) || in_array(strtoupper($i[2]), ['NULL', 'TRUE', 'FALSE'])) {
+                    $wheres_keys[] = "`$i[0]` $i[1] " . strtoupper($i[2]) . " $i[3] ";
+                } else {
+                    $wheres_keys[] = "`$i[0]` $i[1] {$this->instance->quote($i[2])} $i[3] ";
+                }
+            }
+        }
+        $wheres_keys = $wheres_keys ?: ['1=1 AND '];
+        $wheres_keys = implode('', $wheres_keys);
+        $wheres_keys = substr($wheres_keys, 0, $wheres ? -2 - strlen($i[3]) : -5);
+
         $this->query("
             SELECT
                 `key`,
@@ -642,6 +685,8 @@ class PDOSQLite extends AbstractModel
                 `last_id`
             FROM
                 `requests_avg`
+            WHERE
+                $wheres_keys
             ORDER BY
                 `$dtKeysOrder` $dtKeysDir
             LIMIT
@@ -710,29 +755,13 @@ class PDOSQLite extends AbstractModel
         $json['profile_count'] = intval($json['profile_count']);
         $json['profile'] = [];
 
-        $this->query("
-            SELECT
-                `key`,
-                `index`,
-                `parent_id`,
-                `start`,
-                `end`,
-                `duration`,
-                `memory`,
-                `memory_peak`,
-                `error`,
-                `extra`
-            FROM
-                `profiles`
-            WHERE
-                `id` = :id
-            ORDER BY
-                `index` ASC
-        ", [
-            'id' => $id
-        ]);
-        if ($this->rows) {
-            foreach ($this->rows as $i) {
+        if (empty($json['get'])) {
+            parse_str(parse_url($json['url'], PHP_URL_QUERY), $json['get']);
+        }
+
+        if (is_file("$this->directory/profiles/$id.json.gz")) {
+            $profile = json_decode(gzdecode(file_get_contents("$this->directory/profiles/$id.json.gz")), true);
+            foreach ($profile as $i) {
                 $i['duration'] = round($i['duration'], 3);
                 $i['memory'] = $i['memory'] ? round($i['memory'], 3) : null;
                 $i['memory_peak'] = $i['memory_peak'] ? round($i['memory_peak'], 3) : null;
@@ -740,6 +769,7 @@ class PDOSQLite extends AbstractModel
                 $i['extra'] = $i['extra'] ? json_decode($i['extra'], true) : null;
                 $json['profile'][] = $i;
             }
+            unset($profile);
         }
 
         $json['key_info'] = [];

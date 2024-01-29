@@ -112,13 +112,13 @@ class Viewer
 
     private static function outputViewerData()
     {
-        static::outputJson(Analysis::getModel()->getViewerData($_REQUEST));
+        static::outputJson(Analysis::getDriver()->getViewerData($_REQUEST));
         exit;
     }
 
     private static function outputRequestData()
     {
-        static::outputJson(Analysis::getModel()->getRequestData(
+        static::outputJson(Analysis::getDriver()->getRequestData(
             isset($_REQUEST['id']) ? $_REQUEST['id'] : false
         ));
         exit;
