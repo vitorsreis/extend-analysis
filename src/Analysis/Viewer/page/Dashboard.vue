@@ -435,18 +435,16 @@ export default {
     resize() {
       let new_len = dtPageLength();
 
-      let old_len_reqs = this.$refs['dt-reqs'].$refs.dt.dt?.page.info()?.length;
+      let old_len_reqs = this?.$refs['dt-reqs']?.$refs.dt.dt?.page.info()?.length;
       if (old_len_reqs && old_len_reqs !== new_len) {
-        console.log('dt-reqs-page-length-change', old_len_reqs, new_len);
-        this.$refs['dt-reqs'].$refs.dt.dt?.page.len(new_len);
-        this.$refs['dt-reqs'].$refs.dt.dt?.draw(false);
+        this?.$refs['dt-reqs']?.$refs.dt.dt?.page.len(new_len);
+        this?.$refs['dt-reqs']?.$refs.dt.dt?.draw(false);
       }
 
-      let old_len_keys = this.$refs['dt-keys'].$refs.dt.dt?.page.info()?.length;
+      let old_len_keys = this?.$refs['dt-keys']?.$refs.dt.dt?.page.info()?.length;
       if (old_len_keys && old_len_keys !== new_len) {
-        console.log('dt-keys-page-length-change', old_len_keys, new_len);
-        this.$refs['dt-keys'].$refs.dt.dt?.page.len(new_len);
-        this.$refs['dt-keys'].$refs.dt.dt?.draw(false);
+        this?.$refs['dt-keys']?.$refs.dt.dt?.page.len(new_len);
+        this?.$refs['dt-keys']?.$refs.dt.dt?.draw(false);
       }
 
       if (old_len_reqs !== new_len || old_len_keys !== new_len) {
@@ -459,7 +457,7 @@ export default {
         this.updateDataTimeout = null;
       }
 
-      if (typeof this.$refs['dt-reqs'] === 'undefined' || typeof this.$refs['dt-keys'] === 'undefined') {
+      if (typeof this?.$refs['dt-reqs'] === 'undefined' || typeof this?.$refs['dt-keys'] === 'undefined') {
         this.updateDataTimeout = setTimeout(() => this.updateData(), 10);
         return;
       }
@@ -467,11 +465,11 @@ export default {
       this.reportStatus.class = 'warning';
       this.reportStatus.text = '...';
 
-      let dtReqsOrder = this.$refs['dt-reqs'].$refs.dt.dt?.order() || false;
+      let dtReqsOrder = this?.$refs['dt-reqs']?.$refs.dt.dt?.order() || false;
       dtReqsOrder = dtReqsOrder[0] || false;
       dtReqsOrder = dtReqsOrder[0] || false;
       if (dtReqsOrder) {
-        dtReqsOrder = this.$refs['dt-reqs'].$refs.dt.dt?.settings()[0].aoColumns[dtReqsOrder].data;
+        dtReqsOrder = this?.$refs['dt-reqs']?.$refs.dt.dt?.settings()[0].aoColumns[dtReqsOrder].data;
       } else {
         dtReqsOrder = 'start';
       }
@@ -480,42 +478,40 @@ export default {
       dtReqsDir = dtReqsDir[0] || false;
       dtReqsDir = dtReqsDir[1] || 'desc';
 
-      let dtKeysOrder = this.$refs['dt-keys'].$refs.dt.dt?.order() || false;
+      let dtKeysOrder = this?.$refs['dt-keys']?.$refs.dt.dt?.order() || false;
       dtKeysOrder = dtKeysOrder[0] || false;
       dtKeysOrder = dtKeysOrder[0] || false;
       if (dtKeysOrder) {
-        dtKeysOrder = this.$refs['dt-keys'].$refs.dt.dt?.settings()[0].aoColumns[dtKeysOrder].data;
+        dtKeysOrder = this?.$refs['dt-keys']?.$refs.dt.dt?.settings()[0].aoColumns[dtKeysOrder].data;
       } else {
         dtKeysOrder = 'avg';
       }
 
-      let dtKeysDir = this.$refs['dt-keys']?.$refs.dt.dt?.order() || false;
+      let dtKeysDir = this?.$refs['dt-keys']?.$refs.dt.dt?.order() || false;
       dtKeysDir = dtKeysDir[0] || false;
       dtKeysDir = dtKeysDir[1] || 'desc';
-
-      console.log(JSON.stringify([...this.wheres.map(i => [i.field, i.operator, i.value, i.and_or])]));
 
       let start_time = new Date().getTime();
       this.report = await analysis.action('viewer-data', {
         chartGroupBy: analysis.settings.chart.groupBy,
         chartLength: analysis.settings.chart.length,
-        dtReqsStart: this.$refs['dt-reqs']?.$refs.dt.dt?.page.info()?.start || 0,
-        dtReqsLength: this.$refs['dt-reqs']?.$refs.dt.dt?.page.info()?.length || 10,
+        dtReqsStart: this?.$refs['dt-reqs']?.$refs.dt.dt?.page.info()?.start || 0,
+        dtReqsLength: this?.$refs['dt-reqs']?.$refs.dt.dt?.page.info()?.length || 10,
         dtReqsOrder,
         dtReqsDir,
-        dtKeysStart: this.$refs['dt-keys']?.$refs.dt.dt?.page.info()?.start || 0,
-        dtKeysLength: this.$refs['dt-keys']?.$refs.dt.dt?.page.info()?.length || 10,
+        dtKeysStart: this?.$refs['dt-keys']?.$refs.dt.dt?.page.info()?.start || 0,
+        dtKeysLength: this?.$refs['dt-keys']?.$refs.dt.dt?.page.info()?.length || 10,
         dtKeysOrder,
         dtKeysDir,
         wheres: JSON.stringify([...this.wheres.map(i => [i.field, i.operator, i.value, i.and_or])]),
       });
 
-      this.$refs['dt-keys'].redraw(
+      this?.$refs['dt-keys']?.redraw(
           this.report.request?.dt.keys.data,
           this.report.request?.dt.keys.recordsTotal,
           this.report.request?.dt.keys.recordsFiltered
       );
-      this.$refs['dt-reqs'].redraw(
+      this?.$refs['dt-reqs']?.redraw(
           this.report.request?.dt.reqs.data,
           this.report.request?.dt.reqs.recordsTotal,
           this.report.request?.dt.reqs.recordsFiltered
@@ -796,7 +792,6 @@ export default {
             },
             click: (event) => {
               let id = null, target = event.target;
-              console.log(target);
 
               // Capture change page or change order, and force update data
               if (target.hasAttribute('data-dt-idx') && !target.hasAttribute('aria-current')) {
@@ -815,7 +810,7 @@ export default {
                 return;
               }
 
-              id = this.$refs['dt-reqs'].$refs.dt.dt?.row(target).data()?.id;
+              id = this?.$refs['dt-reqs']?.$refs.dt.dt?.row(target).data()?.id;
               id && window.open(analysis.geturl('request', {id}), '_blank');
             }
           },
@@ -880,22 +875,18 @@ export default {
             },
             click: (event) => {
               let id = null, target = event.target;
-              console.log(target);
 
               // Capture change page or change order, and force update data
               if (target.hasAttribute('data-dt-idx') && !target.hasAttribute('aria-current')) {
-                console.log('XXXx');
                 setTimeout(() => this.updateData(), 10);
                 return;
               }
               if (target.nodeName === 'TH' && target.classList.contains('sorting')) {
-                console.log('ZZZz');
                 setTimeout(() => this.updateData(), 10);
                 return;
               }
 
               if (!target.classList.contains('badge')) {
-                console.log('AAAa');
                 return;
               }
 
@@ -903,21 +894,17 @@ export default {
                 target = target.parentNode;
               }
               if (!target) {
-                console.log('BBBb');
                 return;
               }
 
-              let row = this.$refs['dt-keys'].$refs.dt.dt?.row(target).data();
+              let row = this?.$refs['dt-keys']?.$refs.dt.dt?.row(target).data();
               if (target.classList.contains('min')) {
                 id = row?.min_id;
               } else if (target.classList.contains('max')) {
                 id = row?.max_id;
               } else if (target.classList.contains('last')) {
                 id = row?.last_id;
-              } else {
-                console.log('CCCc', target);
               }
-              console.log('EEEe', id, target, row);
 
               id && window.open(analysis.geturl('request', {id}), '_blank');
             }

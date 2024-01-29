@@ -31,7 +31,13 @@ class Viewer
                 exit;
 
             default:
-                self::outputFile('index.html');
+                self::outputFile('index.html', [
+                    "base" => explode(
+                        '?',
+                        (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http")
+                        . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]"
+                    )[0]
+                ]);
                 exit;
         }
     }
@@ -78,7 +84,7 @@ class Viewer
         exit;
     }
 
-    private static function outputFile($file)
+    private static function outputFile($file, $replace = null)
     {
         $dir = realpath(__DIR__ . '/Viewer');
         $file = realpath("$dir/$file");
@@ -103,6 +109,12 @@ class Viewer
         $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
         $mimeType = isset($mimeType[$ext]) ? $mimeType[$ext] : 'text/plain';
         $content = file_get_contents($file);
+
+        if ($replace) {
+            foreach ($replace as $key => $value) {
+                $content = preg_replace("/\{\{\s*$key\s*}}/", strval($value), $content);
+            }
+        }
 
         header("Content-Type: $mimeType; charset=utf-8");
         header('Content-Length: ' . strlen($content));

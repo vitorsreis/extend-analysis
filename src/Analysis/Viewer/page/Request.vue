@@ -256,9 +256,11 @@ export default {
 
       let popover = '';
       if (profile.error) {
-        popover += `<div class="bg-danger">`;
-        popover += `<b>Error</b> #${profile.error.code} ${profile.error.message} on file ${profile.error.file}:${profile.error.line}`;
-        popover += `</div>`;
+        for (let error of Object.values(profile.error)) {
+          popover += `<div class="bg-danger">`;
+          popover += `<b>Error</b> #${error.code} ${error.message} on file ${error.file}:${error.line}`;
+          popover += `</div>`;
+        }
       }
       if (profile.extra) {
         popover += `<div class="bg-secondary-subtle w-100">`;

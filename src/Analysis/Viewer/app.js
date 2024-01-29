@@ -4,12 +4,14 @@
  */
 
 import * as Vue from 'vue';
-import VueSfc from 'vue3-sfc-loader';
+import * as VueSfc from 'vue3-sfc-loader';
 import * as Bootstrap from 'bootstrap';
 import * as ChartJS from 'chart.js';
 import * as VueChart from "vue-chartjs";
 import DataTable from 'datatables.net-vue3';
 import DataTablesCore from 'datatables.net-bs5';
+
+
 
 window.analysis = {
     href: window.location.href,
@@ -28,7 +30,7 @@ window.analysis = {
 
     component(file) {
         return Vue.defineAsyncComponent(async () => await VueSfc.loadModule(file + ".vue", {
-            moduleCache: { vue: Vue },
+            moduleCache: {  vue: Vue },
             devMode: true,
             getFile: async () => await this.action('file', {file}, false, false),
             addStyle(textContent) {
@@ -171,8 +173,6 @@ app.config.globalProperties.analysis = window.analysis = Vue.reactive(window.ana
 app.config.devtools = true;
 app.config.performance = true;
 app.use(DataTable);
-
-// fix "isCE" error on vue3-sfc-loader
 
 document.body.id = 'app';
 app.mount('#app');

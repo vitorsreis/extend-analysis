@@ -12,6 +12,7 @@
 
     <title>analysis - @vitorsreis</title>
     <link rel="icon" type="image/x-icon" href="https://d5w.com.br/favicon.ico">
+    <base href="{{ base }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="preconnect" href="https://fonts.gstatic.com"/>
@@ -58,19 +59,29 @@
 <script type="importmap">
     {
         "imports": {
-            "vue-with-debug": "https://unpkg.com/vue@3.3.11/dist/vue.esm-browser.js",
-            "vue": "https://cdn.jsdelivr.net/npm/vue@3.3.11/+esm",
-            "vue3-sfc-loader": "https://cdn.jsdelivr.net/npm/vue3-sfc-loader@0.8.4/+esm",
-            "bootstrap": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/+esm",
-            "chart.js": "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/+esm",
-            "vue-chartjs": "https://cdn.jsdelivr.net/npm/vue-chartjs@5.3.0/+esm",
-            "datatables.net-bs5": "https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.8/+esm",
-            "datatables.net-vue3": "https://cdn.jsdelivr.net/npm/datatables.net-vue3@2.1.3/+esm"
+            "vue": "https://cdn.jsdelivr.net/npm/vue@3.4.15/dist/vue.esm-bundler.js",
+            "@vue/runtime-dom": "https://cdn.jsdelivr.net/npm/@vue/runtime-dom@3.4.15/dist/runtime-dom.esm-bundler.js",
+            "@vue/compiler-dom": "https://cdn.jsdelivr.net/npm/@vue/compiler-dom@3.4.15/dist/compiler-dom.esm-bundler.js",
+            "@vue/shared": "https://cdn.jsdelivr.net/npm/@vue/shared@3.4.15/dist/shared.esm-bundler.js",
+            "@vue/runtime-core": "https://cdn.jsdelivr.net/npm/@vue/runtime-core@3.4.15/dist/runtime-core.esm-bundler.js",
+            "@vue/reactivity": "https://cdn.jsdelivr.net/npm/@vue/reactivity@3.4.15/dist/reactivity.esm-bundler.js",
+            "@vue/compiler-core": "https://cdn.jsdelivr.net/npm/@vue/compiler-core@3.4.15/dist/compiler-core.esm-bundler.js",
+            "vue3-sfc-loader": "https://cdn.jsdelivr.net/npm/vue3-sfc-loader@0.9.4/dist/vue3-sfc-loader.esm.js",
+            "bootstrap": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.esm.js",
+            "chart.js": "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.js",
+            "vue-chartjs": "https://cdn.jsdelivr.net/npm/vue-chartjs@5.3.0/dist/index.js",
+            "jquery": "{{ base }}?d5whub-extend-analysis=file&file=%2Fjs%2Fjquery.js",
+            "datatables.net": "{{ base }}?d5whub-extend-analysis=file&file=%2Fjs%2Fdatatables.net.js",
+            "datatables.net-bs5": "{{ base }}?d5whub-extend-analysis=file&file=%2Fjs%2Fdatatables.net-bs5.js",
+            "datatables.net-vue3": "{{ base }}?d5whub-extend-analysis=file&file=%2Fjs%2Fdatatables.net-vue3.js",
+            "@popperjs/core": "https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/esm/popper.js",
+            "@kurkle/color": "https://cdn.jsdelivr.net/npm/@kurkle/color@0.3.2/dist/color.esm.js"
         }
     }
 </script>
 <script type="text/javascript">
     const __VUE_PROD_DEVTOOLS__ = true;
+    const process = {env: {NODE_ENV: 'production'}};
 
     let url = new URL(window.location.href);
     url.searchParams.set('d5whub-extend-analysis', 'file');

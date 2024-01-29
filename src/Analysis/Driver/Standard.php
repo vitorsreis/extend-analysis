@@ -540,7 +540,7 @@ class Standard extends AbstractDriver
             $this->query("
                 SELECT
                     `ref` AS `ref`,
-                    GROUP_CONCAT(json_object('key', `key`,'count', `count`,'value', `value`)) AS `json`
+                    GROUP_CONCAT('{\"key\":\"'||`key`||'\",\"count\":'||`count`||',\"value\":'||`value`||'}') AS `json`
                 FROM
                     `hits`
                 WHERE
@@ -555,6 +555,7 @@ class Standard extends AbstractDriver
                 'type' => $chartGroupBy,
                 'length' => $chartLength
             ]);
+
             foreach ($this->rows as $i) {
                 foreach (json_decode('[' . $i['json'] . ']', true) as $j) {
                     !isset($json['server']['chart'][$i['ref']])
@@ -756,17 +757,17 @@ class Standard extends AbstractDriver
         $json['profile'] = [];
 
         if (empty($json['get'])) {
-            parse_str(parse_url($json['url'], PHP_URL_QUERY), $json['get']);
+            parse_str(parse_url($json['url'], PHP_URL_QUERY) ?: '', $json['get']);
         }
 
         if (is_file("$this->directory/profiles/$id.json.gz")) {
             $profile = json_decode(gzdecode(file_get_contents("$this->directory/profiles/$id.json.gz")), true);
             foreach ($profile as $i) {
                 $i['duration'] = round($i['duration'], 3);
-                $i['memory'] = $i['memory'] ? round($i['memory'], 3) : null;
-                $i['memory_peak'] = $i['memory_peak'] ? round($i['memory_peak'], 3) : null;
-                $i['error'] = $i['error'] ? json_decode($i['error'], true) : null;
-                $i['extra'] = $i['extra'] ? json_decode($i['extra'], true) : null;
+                $i['memory'] = !empty($i['memory']) ? round($i['memory'], 3) : null;
+                $i['memory_peak'] = !empty($i['memory_peak']) ? round($i['memory_peak'], 3) : null;
+                $i['error'] = !empty($i['error']) ? json_decode($i['error'], true) : null;
+                $i['extra'] = !empty($i['extra']) ? json_decode($i['extra'], true) : null;
                 $json['profile'][] = $i;
             }
             unset($profile);
