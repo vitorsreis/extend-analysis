@@ -7,6 +7,7 @@ CHANGELOG
 - Fixed 'undefined' error in profile
 - Fixed search in dashboard
 - Fixed total in datatables
+- Fixed Server Top Normalizer
 
 ## 1.1.0
 - Fixed bugs
