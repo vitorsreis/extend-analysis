@@ -5,6 +5,7 @@ CHANGELOG
 - Fixed 'isCE' on null
 - Fixed JSON_OBJECT is not a function
 - Fixed 'undefined' error in profile
+- Fixed search in dashboard
 
 ## 1.1.0
 - Fixed bugs
