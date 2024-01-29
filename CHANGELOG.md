@@ -6,6 +6,7 @@ CHANGELOG
 - Fixed JSON_OBJECT is not a function
 - Fixed 'undefined' error in profile
 - Fixed search in dashboard
+- Fixed total in datatables
 
 ## 1.1.0
 - Fixed bugs
