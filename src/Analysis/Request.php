@@ -42,11 +42,6 @@ class Request
         !empty($options['autoSave']) && register_shutdown_function([$this, 'save']);
     }
 
-    public function __destruct()
-    {
-        unset($this->profile, $this->parent_id, $this->error, $this->extra, $this->beforeSave);
-    }
-
     /**
      * Profile start, level up
      * @param string $key Profile key
