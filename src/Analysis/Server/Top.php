@@ -17,8 +17,8 @@ class Top extends AbstractServer
             top\s+-\s+(?<hour>[\d:]+)\s+up\s+(?:(?<up_days>\d+)\s+days?,\s+)?(?:(?<up_hour>[\d:]+),\s+)?(?:(?<up_min>\d+)\s+min,\s+)?(?<users>\d+)\s+user(?:s)?(?:,\s+load\s+average:\s+(?<la1>[\d.]+),\s+(?<la2>[\d.]+),\s+(?<la3>[\d.]+))?.*
             (?:Threads|Tasks):\s+(?<thr_total>\d+)\s+total,\s+(?<thr_running>\d+)\s+running,\s+(?<thr_sleeping>\d+)\s+sleeping,\s+(?<thr_stopped>\d+)\s+stopped,\s+(?<thr_zombie>\d+)\s+zombie\s+
             %Cpu\(s\):\s+(?<cpu>[\d.]+)\s+us(?:,\s+(?<cpu_sy>[\d.]+)\s+sy,\s+(?<cpu_ni>[\d.]+)\s+ni,\s+(?<cpu_id>[\d.]+)\s+id,\s+(?<cpu_wa>[\d.]+)\s+wa,\s+(?<cpu_hi>[\d.]+)\s+hi,\s+(?<cpu_si>[\d.]+)\s+si,\s+(?<cpu_st>[\d.]+)\s+st)?.*
-            MiB\s+Mem\s+:\s+(?<mem_total>[\d.]+)\s+total,\s+(?<mem_free>[\d.]+)\s+free,\s+(?<mem_used>[\d.]+)\s+used(?:,\s+(?<mem_cache>[\d.]+)\s+buff\s+)?.*
-            MiB\s+Swap:\s+(?<swa_total>[\d.]+)\s+total,\s+(?<swa_free>[\d.]+)\s+free,\s+(?<swa_used>[\d.]+)\s+used(?:\.\s+(?<swa_cache>[\d.]+)\s+avail)?.*
+            [MK]iB\s+Mem\s+:\s+(?<mem_total>[\d.]+)\s+total,\s+(?<mem_free>[\d.]+)\s+free,\s+(?<mem_used>[\d.]+)\s+used(?:,\s+(?<mem_cache>[\d.]+)\s+buff\s+)?.*
+            [MK]iB\s+Swap:\s+(?<swa_total>[\d.]+)\s+total,\s+(?<swa_free>[\d.]+)\s+free,\s+(?<swa_used>[\d.]+)\s+used(?:\.\s+(?<swa_cache>[\d.]+)\s+avail)?.*
         ~xs
     ";
 
